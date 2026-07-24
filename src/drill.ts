@@ -10,6 +10,7 @@
 // ---------------------------------------------------------------------------
 
 import type { QuizQuestion } from "./quiz";
+import { logActivity } from "./activity";
 
 const SRS_KEY = "agentic-guide-srs-v1";
 const DAY = 86_400_000;
@@ -52,6 +53,14 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+/** Read-only snapshot of scheduling state, for the flight record (stats.ts). */
+export function readSrsSnapshot(): Record<string, { box: number; due: number }> {
+  const store = loadStore();
+  const out: Record<string, { box: number; due: number }> = {};
+  for (const [id, s] of Object.entries(store)) out[id] = { box: s.box, due: s.due };
+  return out;
+}
+
 export interface DrillHandle {
   open(): void;
   /** cards reviewable right now: overdue + never-seen */
@@ -91,6 +100,7 @@ export function initDrill(
     }
     store[q.id] = s;
     saveStore(store);
+    logActivity(correct ? "hit" : "miss");
     onStateChange();
   }
 

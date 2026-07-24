@@ -886,3 +886,487 @@ a:hover {
     overflow-x: auto;
   }
 }
+
+/* Pattern lab ---------------------------------------------------------- */
+
+.lab-card {
+  width: min(880px, 100%);
+}
+
+.lab-h {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  margin: 18px 0 8px;
+}
+
+.lab-h-ref {
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--signal);
+}
+
+.lab-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 22px;
+  align-items: start;
+}
+
+.lab-chip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.lab-chip:hover {
+  border-color: var(--signal);
+}
+
+.lab-chip.on {
+  border-color: var(--signal);
+  background: #faf6ef;
+  box-shadow: inset 2px 0 0 var(--signal);
+}
+
+.lab-chip-name {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.lab-chip-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.lab-row {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.lab-seg {
+  display: inline-flex;
+  border: 1px solid var(--hairline);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.lab-seg-btn {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 7px 12px;
+  border: none;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.lab-seg-btn + .lab-seg-btn {
+  border-left: 1px solid var(--hairline);
+}
+
+.lab-seg-btn.on {
+  background: var(--signal);
+  color: #fff;
+}
+
+.lab-via {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 15px;
+}
+
+/* in-flight instruments */
+
+.lab-meters {
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 10px 18px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.lab-meter {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.lab-meter-label,
+.lab-meter-val,
+.lab-dial {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.lab-meter-val {
+  min-width: 38px;
+  text-align: right;
+}
+
+.lab-bar {
+  height: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 60px;
+}
+
+.lab-bar-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--signal), var(--signal-bright));
+  transition: width 0.3s ease;
+}
+
+.lab-bar-fill.sig {
+  background: var(--done);
+}
+
+.lab-bar-fill.hot {
+  background: var(--signal-bright);
+}
+
+.lab-bar-fill.crit {
+  background: var(--bad);
+}
+
+.lab-dials {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lab-dial strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+
+.lab-log {
+  list-style: none;
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--rail);
+  border-radius: 8px;
+  max-height: 40vh;
+  min-height: 120px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.lab-ev {
+  padding: 3px 0 3px 12px;
+  border-left: 2px solid #33404b;
+  margin: 2px 0;
+  color: var(--rail-ink);
+}
+
+.lab-ev.info {
+  color: var(--rail-dim);
+}
+
+.lab-ev.good {
+  border-left-color: #4fae82;
+  color: #9fd8bc;
+}
+
+.lab-ev.warn {
+  border-left-color: var(--signal-bright);
+  color: #ecc27c;
+}
+
+.lab-ev.bad {
+  border-left-color: #d96b6b;
+  color: #eba3a3;
+}
+
+/* debrief */
+
+.lab-verdict {
+  font-size: 16.5px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.lab-tiles {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.lab-tile {
+  flex: 1;
+  min-width: 120px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.lab-tile-grade {
+  font-family: var(--mono);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.g-A { color: var(--done); }
+.g-B { color: #6d9e56; }
+.g-C { color: var(--signal-bright); }
+.g-D { color: #c56a2b; }
+.g-F { color: var(--bad); }
+
+.lab-tile-num {
+  font-family: var(--mono);
+  font-size: 15px;
+}
+
+.lab-tile-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.lab-findings {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.lab-finding {
+  border-left: 3px solid var(--hairline);
+  padding: 8px 14px;
+  margin: 8px 0;
+  border-radius: 0 6px 6px 0;
+  background: #f6f7f8;
+}
+
+.lab-finding.good {
+  border-left-color: var(--done);
+  background: #f0f8f4;
+}
+
+.lab-finding.bad {
+  border-left-color: var(--bad);
+  background: #fbf1f1;
+}
+
+.lab-finding.note {
+  border-left-color: var(--signal);
+  background: #faf6ef;
+}
+
+.lab-finding p {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+
+.lab-ref-link {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--signal);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.lab-ref-link:hover {
+  color: var(--signal-bright);
+  text-decoration: underline;
+}
+
+.lab-rec {
+  border: 1px dashed var(--signal);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 4px;
+}
+
+.lab-rec p {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+/* Flight record --------------------------------------------------------- */
+
+.fr-card {
+  width: min(760px, 100%);
+}
+
+.fr-tiles {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fr-tile {
+  flex: 1;
+  min-width: 110px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.fr-tile strong {
+  display: block;
+  font-family: var(--mono);
+  font-size: 22px;
+}
+
+.fr-tile span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+}
+
+.fr-heat {
+  display: grid;
+  grid-template-rows: repeat(7, 13px);
+  grid-auto-flow: column;
+  grid-auto-columns: 13px;
+  gap: 3px;
+}
+
+.fr-cell {
+  border-radius: 3px;
+  background: #e4e7ea;
+}
+
+.fr-cell.q1 { background: #f0dcb2; }
+.fr-cell.q2 { background: #e5bd76; }
+.fr-cell.q3 { background: #d3982f; }
+.fr-cell.q4 { background: var(--signal); }
+
+.fr-mastery-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 130px 70px;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--hairline);
+}
+
+.fr-mastery-title {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fr-read {
+  color: var(--done);
+}
+
+.fr-mastery-bar {
+  height: 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.fr-mastery-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--signal), var(--signal-bright));
+}
+
+.fr-mastery-meta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.fr-forecast {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.fr-fc-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+}
+
+.fr-fc-bar {
+  width: 100%;
+  max-width: 26px;
+  border-radius: 3px 3px 0 0;
+  background: #e4e7ea;
+}
+
+.fr-fc-bar.has {
+  background: linear-gradient(180deg, var(--signal-bright), var(--signal));
+}
+
+.fr-fc-day {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--muted);
+}
+
+/* Lab + flight record on small screens ----------------------------------- */
+
+@media (max-width: 900px) {
+  .lab-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lab-meters {
+    grid-template-columns: 1fr;
+  }
+
+  .lab-dials {
+    flex-direction: row;
+    gap: 14px;
+  }
+
+  .fr-heat {
+    grid-template-rows: repeat(7, 10px);
+    grid-auto-columns: 10px;
+    justify-content: start;
+    overflow-x: auto;
+  }
+
+  .fr-mastery-row {
+    grid-template-columns: 34px 1fr 70px;
+  }
+
+  .fr-mastery-meta {
+    display: none;
+  }
+}
