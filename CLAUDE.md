@@ -66,7 +66,31 @@ Everything renders from typed data. The moving parts:
   change, re-check the corresponding model terms and finding texts here.
 - **`src/lab.ts`** — the pattern-lab UI over `labsim.ts`: configure → animated
   run (event log + live meters) → debrief. Debrief findings link back into
-  sections via a `jumpTo` callback from `main.ts`.
+  sections via a `jumpTo` callback from `main.ts`. `openWith(mission, cfg)`
+  flies a mission that isn't in `MISSIONS` — the architect hands its
+  synthesized "your task" mission in here, and it appears as an extra chip
+  on the config screen while active.
+- **`src/architect.ts`** — the architect's decision engine, pure logic with
+  no DOM. Eight trait questions (`TRAITS`) about a real task → a synthetic
+  `Mission` → all seven patterns scored via `patternFit` and stress-tested
+  via `simulate(cfg, false, missionOverride)` → a stance
+  (call/workflow/agent/multi), ranked scoreboard, context plan, guardrail
+  kit, and a Markdown decision brief (`buildBrief`) with a starter
+  CLAUDE.md. Answers travel by URL as `#arch=1.<8 digits 0–2>` (digit order
+  = `TRAITS` order — bump the version if that changes). The advice strings
+  encode the guide's claims: re-check them when sections change.
+- **`src/architectui.ts`** — the architect's overlay: interview (one
+  question per screen) → verdict → brief (copy/download). Last answers
+  persist under `agentic-guide-architect-v1`; a `#arch=` hash opens straight
+  onto the recomputed verdict.
+- **`src/checkride.ts`** — the certification exam: 12 questions sampled for
+  section coverage from `quiz.ts`, one pass, no feedback until the end, pass
+  mark 80%. Deliberately does NOT touch SRS scheduling (it logs activity
+  only). Passing builds a shareable wings link
+  `#wings=1.<pct>.<yyyymmdd>.<uri-name>.<salted djb2>` — tamper-evidence,
+  not cryptography; the name is the only URL-sourced string rendered into
+  HTML and `main.ts` escapes it. Best local result persists under
+  `agentic-guide-wings-v1`.
 - **`src/activity.ts`** — tiny per-device study-event journal (sections read,
   drill hits/misses) under `agentic-guide-log-v1`; shared by `drill.ts` and
   `stats.ts` so they don't import each other.
@@ -93,9 +117,18 @@ the ledger key.
 The ledger persists to `localStorage` under `agentic-guide-ledger-v1`
 (`STORE_KEY` in `main.ts`); drill scheduling under `agentic-guide-srs-v1`
 (`SRS_KEY` in `drill.ts`); the study-activity journal under
-`agentic-guide-log-v1` (`LOG_KEY` in `activity.ts`). Changing any key resets
-everyone's saved state for that feature — they are deliberately independent
-stores.
+`agentic-guide-log-v1` (`LOG_KEY` in `activity.ts`); the architect's last
+interview under `agentic-guide-architect-v1` (`ARCH_KEY` in
+`architectui.ts`); the best checkride result under `agentic-guide-wings-v1`
+(`WINGS_KEY` in `checkride.ts`). Changing any key resets everyone's saved
+state for that feature — they are deliberately independent stores.
+
+Three URL-hash payloads coexist and are mutually exclusive: `#share=1.…`
+(ledger bits, `share.ts`), `#arch=1.…` (architect answers, `architect.ts`),
+`#wings=1.…` (checkride certificate, `checkride.ts`). All are read once at
+module init in `main.ts`; section bodies are trusted HTML but hash-sourced
+strings (the wings name) are not — escape anything from a hash before it
+touches `innerHTML`.
 
 `src/styles.css` is the design system (imported from `main.ts`).
 `vite.config.ts` sets `base: "./"` so `dist/` is relocatable and works from a

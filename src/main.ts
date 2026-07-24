@@ -6,6 +6,9 @@ import { initDrill } from "./drill";
 import { initPalette } from "./palette";
 import { initLab } from "./lab";
 import { initStats } from "./stats";
+import { initArchitect } from "./architectui";
+import { readArchHash } from "./architect";
+import { initCheckride, readWingsHash } from "./checkride";
 import { logActivity } from "./activity";
 import { buildShareUrl, readShareHash, clearShareHash } from "./share";
 
@@ -39,7 +42,11 @@ function saveLedger(ledger: Ledger): void {
 let ledger = loadLedger();
 
 // A share link carrying a teammate's progress? Read it once, before render.
+// Same for a wings certificate and an architect interview — the three hash
+// formats are mutually exclusive, so at most one of these is non-null.
 const pendingShare = readShareHash(sections);
+const pendingWings = readWingsHash();
+const pendingArch = readArchHash();
 
 // ---------------------------------------------------------------------------
 // Rendering
@@ -56,6 +63,33 @@ function docsList(s: Section): string {
     )
     .join("");
   return `<aside class="docs"><h4>Official docs &amp; sources</h4><ul>${items}</ul></aside>`;
+}
+
+// Unlike section bodies (trusted, authored in-repo), the wings name arrives
+// via the URL from whoever built the link — escape it before it touches HTML.
+function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function wingsBanner(): string {
+  if (!pendingWings) return "";
+  const verb = pendingWings.pct >= 80 ? "passed the checkride" : "flew the checkride";
+  const mark = pendingWings.valid
+    ? `<strong>✓ checksum verified</strong>`
+    : `checksum mismatch — treat as unverified`;
+  return `
+    <div class="share-banner" id="wings-banner" role="region" aria-label="Checkride certificate">
+      <p>✈ <strong>${esc(pendingWings.name)}</strong> ${verb} — <strong>${pendingWings.pct}%</strong> on ${pendingWings.date}. ${mark}.</p>
+      <div class="share-actions">
+        <button class="drill-btn primary" data-wings="take" type="button">take the checkride yourself</button>
+        <button class="drill-btn" data-wings="dismiss" type="button">dismiss</button>
+      </div>
+    </div>`;
 }
 
 function shareBanner(): string {
@@ -112,20 +146,23 @@ function render(): void {
           </div>
         </div>
         <ul class="nav-list">${navItems}</ul>
-        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · pattern lab · progress travels by link</p>
+        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · architect · pattern lab · checkride · progress travels by link</p>
       </nav>
       <div class="main">
         <header class="gauge-bar" role="status" aria-live="polite">
           <span class="gauge-label">progress</span>
           <div class="gauge"><div class="gauge-fill" id="gauge-fill"></div></div>
           <span class="gauge-count" id="gauge-count"></span>
+          <button class="bar-btn" id="btn-architect" type="button" title="The architect — profile a real task, get a ranked design and an exportable decision brief">architect</button>
           <button class="bar-btn" id="btn-drill" type="button" title="Recall drill — spaced repetition over what you've read">drill</button>
           <button class="bar-btn" id="btn-lab" type="button" title="Pattern lab — simulate an agent run and watch the trade-offs">lab</button>
+          <button class="bar-btn" id="btn-ride" type="button" title="The checkride — 12-question exam, pass mark 80%, shareable wings">checkride</button>
           <button class="bar-btn" id="btn-stats" type="button" title="Flight record — streaks, mastery, and review forecast">stats</button>
           <button class="bar-btn" id="btn-search" type="button" title="Search the guide (⌘K)">⌘K</button>
         </header>
         <main class="content">
           ${shareBanner()}
+          ${wingsBanner()}
           <section class="intro">
             <h1>${meta.title}</h1>
             <p class="lede">${meta.subtitle}. Work through the levels in order — each builds on the last. Mark sections done as you go; progress is stored locally on this device.</p>
@@ -253,6 +290,34 @@ const lab = initLab(jumpTo);
 document.getElementById("btn-lab")?.addEventListener("click", () => lab.open());
 
 // ---------------------------------------------------------------------------
+// The architect — profile a real task, get a design + brief (architectui.ts).
+// A #arch= link opens straight onto the shared verdict.
+// ---------------------------------------------------------------------------
+const architect = initArchitect(jumpTo, (mission, cfg) => lab.openWith(mission, cfg), toast);
+document.getElementById("btn-architect")?.addEventListener("click", () => architect.open());
+
+if (pendingArch) {
+  clearShareHash();
+  architect.openWithAnswers(pendingArch);
+  toast("a teammate's architecture interview — verdict recomputed locally");
+}
+
+// ---------------------------------------------------------------------------
+// The checkride — certification exam with shareable wings (checkride.ts).
+// ---------------------------------------------------------------------------
+const checkride = initCheckride(sections, questionBank, ordinalOf, jumpTo, toast);
+document.getElementById("btn-ride")?.addEventListener("click", () => checkride.open());
+
+const wingsEl = document.getElementById("wings-banner");
+wingsEl?.querySelectorAll<HTMLButtonElement>("[data-wings]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    clearShareHash();
+    wingsEl.remove();
+    if (btn.dataset.wings === "take") checkride.open();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Flight record — streaks, mastery, and review forecast (see stats.ts).
 // ---------------------------------------------------------------------------
 const stats = initStats(sections, questionBank, () => ledger);
@@ -292,9 +357,19 @@ banner?.querySelectorAll<HTMLButtonElement>("[data-share]").forEach((btn) => {
 // ---------------------------------------------------------------------------
 const palette = initPalette(sections, [
   {
+    label: "Ask the architect",
+    hint: "profile a real task — ranked patterns, guardrails, exportable brief",
+    run: () => architect.open(),
+  },
+  {
     label: "Start recall drill",
     hint: "spaced-repetition cards over what you've read",
     run: () => drill.open(),
+  },
+  {
+    label: "Take the checkride",
+    hint: "12 questions, one pass, 80% to earn shareable wings",
+    run: () => checkride.open(),
   },
   {
     label: "Open the pattern lab",

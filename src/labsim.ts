@@ -224,8 +224,18 @@ function gradeRatio(ratio: number): string {
 
 const fmtK = (k: number): string => `${Math.round(k)}k`;
 
-export function simulate(cfg: LabConfig, computeGrades = true): SimResult {
-  const m = MISSIONS.find((x) => x.id === cfg.mission)!;
+/**
+ * Run one mission. `missionOverride` lets callers simulate a mission that
+ * isn't in MISSIONS — the architect (architect.ts) builds one from a reader's
+ * interview answers and stress-tests patterns against it; cfg.mission is
+ * ignored when an override is present.
+ */
+export function simulate(
+  cfg: LabConfig,
+  computeGrades = true,
+  missionOverride?: Mission,
+): SimResult {
+  const m = missionOverride ?? MISSIONS.find((x) => x.id === cfg.mission)!;
   const fit = patternFit(cfg.pattern, m);
 
   // --- quality budget, set up front; the run spends it -----------------------
@@ -613,6 +623,7 @@ export function simulate(cfg: LabConfig, computeGrades = true): SimResult {
         const r = simulate(
           { mission: cfg.mission, pattern: p.id, context: ctx, compaction: true, tools: "lean" },
           false,
+          missionOverride,
         );
         if (!best || r.quality > best.r.quality + 0.01 || (Math.abs(r.quality - best.r.quality) <= 0.01 && r.cost < best.r.cost)) {
           best = { r, cfg: { mission: cfg.mission, pattern: p.id, context: ctx, compaction: true, tools: "lean" } };

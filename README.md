@@ -9,6 +9,16 @@ section describes for long-running agents).
 
 Beyond reading, the guide is a learning instrument:
 
+- **The architect** — a decision console for *your* work (the `architect`
+  button). Answer eight questions about a real task's shape — scale,
+  coupling, verifiability, stakes — and the engine scores all seven L1
+  patterns against it using the simulator's own fit model, stress-tests the
+  candidates, and returns a stance (call / workflow / agent / multi-agent),
+  a ranked scoreboard with modeled quality/cost/latency, a context plan, and
+  a guardrail kit. Export the whole thing as a Markdown decision brief
+  (including a starter CLAUDE.md), copy a decision link that carries the
+  interview in the URL hash, or hand the synthesized task straight to the
+  pattern lab to watch it fly.
 - **Recall drill** — a spaced-repetition question bank (Leitner boxes,
   persisted per-device) over every section. The `drill` button in the top bar
   shows how many cards are due; missed cards come back sooner, known cards
@@ -24,9 +34,15 @@ Beyond reading, the guide is a learning instrument:
 - **Flight record** — a retention dashboard (the `stats` button): study
   streaks, a 12-week activity heatmap, per-section recall mastery from the
   Leitner boxes, and a 14-day review-due forecast.
+- **The checkride** — a certification exam (the `checkride` button): 12
+  questions sampled across every level, one pass, no feedback until the end,
+  pass mark 80%. Passing earns "wings" — a shareable, checksummed certificate
+  link (`#wings=…`) that shows teammates a verified score banner when opened.
+  Unlike the drill, the checkride never touches your review schedule.
 - **Command palette** — `⌘K` / `Ctrl+K` / `/` opens full-text search across
-  all section content, with quick actions (start drill, open the lab, open
-  the flight record, copy progress link).
+  all section content, with quick actions (ask the architect, start drill,
+  take the checkride, open the lab, open the flight record, copy progress
+  link).
 - **Team share-links** — your ledger encodes into a URL hash (no backend, no
   account). Send the link; a teammate gets a merge / replace / ignore banner.
 

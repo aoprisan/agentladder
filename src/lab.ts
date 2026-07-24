@@ -14,12 +14,15 @@ import {
   PATTERNS,
   simulate,
   type LabConfig,
+  type Mission,
   type SimResult,
   type PatternId,
 } from "./labsim";
 
 export interface LabHandle {
   open(): void;
+  /** fly a mission that isn't in MISSIONS — the architect hands its synthesized "your task" mission here */
+  openWith(mission: Mission, cfg: LabConfig): void;
 }
 
 const TICK_MS = 340; // event-reveal cadence during the run
@@ -43,6 +46,15 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
 
   let timer = 0;
 
+  // A mission synthesized elsewhere (the architect). While active, it replaces
+  // cfg.mission; picking a canned mission chip deactivates it but keeps it
+  // around as a chip so the reader can flip back.
+  let custom: Mission | null = null;
+  let customActive = false;
+
+  const activeMission = (): Mission =>
+    customActive && custom ? custom : MISSIONS.find((m) => m.id === cfg.mission)!;
+
   function close(): void {
     overlay.hidden = true;
     clearInterval(timer);
@@ -53,6 +65,15 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
     overlay.hidden = false;
     document.addEventListener("keydown", onKey);
     renderConfig();
+  }
+
+  function openWith(mission: Mission, newCfg: LabConfig): void {
+    custom = mission;
+    customActive = true;
+    cfg = { ...newCfg };
+    overlay.hidden = false;
+    document.addEventListener("keydown", onKey);
+    startRun();
   }
 
   function onKey(e: KeyboardEvent): void {
@@ -66,13 +87,22 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
   // --- screen 1: configuration ---------------------------------------------
 
   function renderConfig(): void {
-    const missionRows = MISSIONS.map(
-      (m) => `
-      <button class="lab-chip lab-mission${m.id === cfg.mission ? " on" : ""}" data-mission="${m.id}" type="button" aria-pressed="${m.id === cfg.mission}">
+    const customRow = custom
+      ? `
+      <button class="lab-chip lab-mission${customActive ? " on" : ""}" data-mission="__custom" type="button" aria-pressed="${customActive}">
+        <span class="lab-chip-name">${custom.name} <span class="lab-via">(from the architect)</span></span>
+        <span class="lab-chip-sub">${custom.brief}</span>
+      </button>`
+      : "";
+    const missionRows =
+      customRow +
+      MISSIONS.map(
+        (m) => `
+      <button class="lab-chip lab-mission${!customActive && m.id === cfg.mission ? " on" : ""}" data-mission="${m.id}" type="button" aria-pressed="${!customActive && m.id === cfg.mission}">
         <span class="lab-chip-name">${m.name}</span>
         <span class="lab-chip-sub">${m.brief}</span>
       </button>`,
-    ).join("");
+      ).join("");
 
     const patternRows = PATTERNS.map(
       (p) => `
@@ -129,7 +159,12 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
 
     card.querySelectorAll<HTMLButtonElement>("[data-mission]").forEach((b) =>
       b.addEventListener("click", () => {
-        cfg = { ...cfg, mission: b.dataset.mission as LabConfig["mission"] };
+        if (b.dataset.mission === "__custom") {
+          customActive = true;
+        } else {
+          customActive = false;
+          cfg = { ...cfg, mission: b.dataset.mission as LabConfig["mission"] };
+        }
         renderConfig();
       }),
     );
@@ -168,8 +203,8 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
   }
 
   function startRun(): void {
-    const result = simulate(cfg);
-    const mission = MISSIONS.find((m) => m.id === cfg.mission)!;
+    const mission = activeMission();
+    const result = simulate(cfg, true, customActive && custom ? custom : undefined);
     const pattern = PATTERNS.find((p) => p.id === cfg.pattern)!;
 
     card.innerHTML = `
@@ -232,7 +267,7 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
       actions.innerHTML = `<button class="drill-btn primary" data-act="debrief" type="button">read the debrief</button>`;
       actions
         .querySelector<HTMLButtonElement>("[data-act=debrief]")!
-        .addEventListener("click", () => renderDebrief(result));
+        .addEventListener("click", () => renderDebrief(result, mission));
       actions.querySelector<HTMLButtonElement>("[data-act=debrief]")!.focus();
     }
 
@@ -254,9 +289,7 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
 
   // --- screen 3: debrief -----------------------------------------------------
 
-  function renderDebrief(result: SimResult): void {
-    const mission = MISSIONS.find((m) => m.id === result.config.mission)!;
-
+  function renderDebrief(result: SimResult, mission: Mission): void {
     const tiles = `
       <div class="lab-tiles">
         <div class="lab-tile"><span class="lab-tile-grade g-${result.grades.quality}">${result.grades.quality}</span><span class="lab-tile-num">${result.quality}%</span><span class="lab-tile-label">quality</span></div>
@@ -310,5 +343,5 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
     });
   }
 
-  return { open };
+  return { open, openWith };
 }

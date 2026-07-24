@@ -1370,3 +1370,195 @@ a:hover {
     display: none;
   }
 }
+
+/* The architect ---------------------------------------------------------- */
+
+.arch-card {
+  width: min(760px, 100%);
+}
+
+.arch-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--hairline);
+  overflow: hidden;
+  margin: 0 0 18px;
+}
+
+.arch-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--signal), var(--signal-bright));
+  transition: width 0.25s ease;
+}
+
+.arch-opts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.arch-opt {
+  width: 100%;
+}
+
+.arch-opt .opt-key {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 0 5px;
+  margin-right: 8px;
+}
+
+.arch-opt.on .opt-key {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+
+/* verdict scoreboard */
+
+.arch-rows {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.arch-row {
+  display: grid;
+  grid-template-columns: auto 1fr 110px auto;
+  gap: 4px 12px;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  margin: 6px 0;
+}
+
+.arch-row.top {
+  border-color: var(--signal);
+  background: #faf6ef;
+}
+
+.arch-rank {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 0 6px;
+}
+
+.arch-row.top .arch-rank {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+
+.arch-name {
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+.arch-fitbar .lab-bar,
+.arch-fitbar .lab-bar-fill {
+  display: block;
+}
+
+.arch-nums {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.arch-why {
+  grid-column: 2 / -1;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* brief preview */
+
+.arch-brief {
+  background: var(--rail);
+  color: var(--rail-ink);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.6;
+  max-height: 46vh;
+  overflow: auto;
+  white-space: pre-wrap;
+  margin: 0 0 16px;
+}
+
+/* The checkride ----------------------------------------------------------- */
+
+.ride-card {
+  width: min(680px, 100%);
+}
+
+.ride-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+
+.ride-ord {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--bad);
+  color: var(--bad);
+}
+
+.ride-ord.ok {
+  border-color: var(--done);
+  color: var(--done);
+}
+
+.ride-wings {
+  border: 1px solid var(--done);
+  border-radius: 8px;
+  background: #f0f8f4;
+  padding: 12px 14px;
+  margin: 0 0 16px;
+}
+
+.ride-wings p {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+}
+
+.ride-wings-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ride-name {
+  flex: 1;
+  min-width: 160px;
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .arch-row {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .arch-fitbar {
+    display: none;
+  }
+}
