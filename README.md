@@ -7,6 +7,17 @@ with official documentation links throughout. Reading progress is tracked
 per-device in localStorage (the "ledger" — the same pattern the guide's L7
 section describes for long-running agents).
 
+Beyond reading, the guide is a learning instrument:
+
+- **Recall drill** — a spaced-repetition question bank (Leitner boxes,
+  persisted per-device) over every section. The `drill` button in the top bar
+  shows how many cards are due; missed cards come back sooner, known cards
+  retreat to longer intervals.
+- **Command palette** — `⌘K` / `Ctrl+K` / `/` opens full-text search across
+  all section content, with quick actions (start drill, copy progress link).
+- **Team share-links** — your ledger encodes into a URL hash (no backend, no
+  account). Send the link; a teammate gets a merge / replace / ignore banner.
+
 ## Develop
 
 ```sh
@@ -44,10 +55,14 @@ home screen and works fully offline after the first visit.
 
 ```
 index.html            app shell
-public/               favicon (SVG)
-src/main.ts           rendering, ledger state, scrollspy rail
+public/               favicon (SVG), manifest, service worker, icons
+src/main.ts           rendering, ledger state, scrollspy rail, feature wiring
 src/content.ts        sections L0–L3 (typed data)
 src/content2.ts       toolbox, L4–L7, sources
+src/quiz.ts           recall-drill question bank (typed data)
+src/drill.ts          spaced-repetition scheduler + drill overlay
+src/palette.ts        ⌘K command palette / full-text search
+src/share.ts          progress share-links (URL-hash encoding)
 src/styles.css        design system
 ```
 

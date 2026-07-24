@@ -1,6 +1,10 @@
 import "./styles.css";
 import { meta, sections as part1, type Section } from "./content";
 import { sections2 } from "./content2";
+import { questionBank } from "./quiz";
+import { initDrill } from "./drill";
+import { initPalette } from "./palette";
+import { buildShareUrl, readShareHash, clearShareHash } from "./share";
 
 const sections: Section[] = [...part1, ...sections2];
 
@@ -31,6 +35,9 @@ function saveLedger(ledger: Ledger): void {
 
 let ledger = loadLedger();
 
+// A share link carrying a teammate's progress? Read it once, before render.
+const pendingShare = readShareHash(sections);
+
 // ---------------------------------------------------------------------------
 // Rendering
 // ---------------------------------------------------------------------------
@@ -46,6 +53,20 @@ function docsList(s: Section): string {
     )
     .join("");
   return `<aside class="docs"><h4>Official docs &amp; sources</h4><ul>${items}</ul></aside>`;
+}
+
+function shareBanner(): string {
+  if (!pendingShare) return "";
+  const n = pendingShare.done.length;
+  return `
+    <div class="share-banner" id="share-banner" role="region" aria-label="Shared progress">
+      <p>This link carries a teammate's progress: <strong>${n}/${sections.length}</strong> sections marked done.</p>
+      <div class="share-actions">
+        <button class="drill-btn primary" data-share="merge" type="button">merge into mine</button>
+        <button class="drill-btn" data-share="replace" type="button">replace mine</button>
+        <button class="drill-btn" data-share="ignore" type="button">ignore</button>
+      </div>
+    </div>`;
 }
 
 function render(): void {
@@ -88,15 +109,18 @@ function render(): void {
           </div>
         </div>
         <ul class="nav-list">${navItems}</ul>
-        <p class="rail-foot">Updated ${meta.updated} · static site, no backend</p>
+        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · progress travels by link</p>
       </nav>
       <div class="main">
         <header class="gauge-bar" role="status" aria-live="polite">
           <span class="gauge-label">progress</span>
           <div class="gauge"><div class="gauge-fill" id="gauge-fill"></div></div>
           <span class="gauge-count" id="gauge-count"></span>
+          <button class="bar-btn" id="btn-drill" type="button" title="Recall drill — spaced repetition over what you've read">drill</button>
+          <button class="bar-btn" id="btn-search" type="button" title="Search the guide (⌘K)">⌘K</button>
         </header>
         <main class="content">
+          ${shareBanner()}
           <section class="intro">
             <h1>${meta.title}</h1>
             <p class="lede">${meta.subtitle}. Work through the levels in order — each builds on the last. Mark sections done as you go; progress is stored locally on this device.</p>
@@ -168,6 +192,87 @@ function observeSections(): void {
 }
 
 render();
+
+// ---------------------------------------------------------------------------
+// Toast — tiny transient confirmation, used by copy-link and share import.
+// ---------------------------------------------------------------------------
+let toastTimer = 0;
+function toast(msg: string): void {
+  let el = document.querySelector<HTMLElement>(".toast");
+  if (!el) {
+    el = document.createElement("div");
+    el.className = "toast";
+    el.setAttribute("role", "status");
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => el!.classList.remove("show"), 2200);
+}
+
+// ---------------------------------------------------------------------------
+// Recall drill — spaced repetition over the question bank (see drill.ts).
+// ---------------------------------------------------------------------------
+const ordinalOf = (sectionId: string): string =>
+  sections.find((s) => s.id === sectionId)?.ordinal ?? "";
+
+function updateDrillBadge(): void {
+  const btn = document.getElementById("btn-drill");
+  if (!btn) return;
+  const n = drill.readyCount();
+  btn.innerHTML = n > 0 ? `drill <span class="due-badge">${n}</span>` : "drill";
+}
+
+const drill = initDrill(questionBank, ordinalOf, () => updateDrillBadge());
+updateDrillBadge();
+document.getElementById("btn-drill")?.addEventListener("click", () => drill.open());
+
+// ---------------------------------------------------------------------------
+// Team share-links — progress that travels by URL (see share.ts).
+// ---------------------------------------------------------------------------
+async function copyShareLink(): Promise<void> {
+  const url = buildShareUrl(sections, ledger);
+  try {
+    await navigator.clipboard.writeText(url);
+    toast("progress link copied — send it to a teammate");
+  } catch {
+    window.prompt("Copy this progress link:", url);
+  }
+}
+
+const banner = document.getElementById("share-banner");
+banner?.querySelectorAll<HTMLButtonElement>("[data-share]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const act = btn.dataset.share;
+    if (act === "merge" || act === "replace") {
+      if (act === "replace") ledger = {};
+      for (const id of pendingShare?.done ?? []) ledger[id] = true;
+      saveLedger(ledger);
+      syncState();
+      toast(act === "merge" ? "progress merged" : "progress replaced");
+    }
+    clearShareHash();
+    banner.remove();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Command palette — ⌘K search across everything (see palette.ts).
+// ---------------------------------------------------------------------------
+const palette = initPalette(sections, [
+  {
+    label: "Start recall drill",
+    hint: "spaced-repetition cards over what you've read",
+    run: () => drill.open(),
+  },
+  {
+    label: "Copy team progress link",
+    hint: "share your ledger as a URL — no backend, no account",
+    run: () => void copyShareLink(),
+  },
+]);
+document.getElementById("btn-search")?.addEventListener("click", () => palette.open());
 
 // ---------------------------------------------------------------------------
 // PWA — register the service worker so the guide installs and works offline.
