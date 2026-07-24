@@ -13,8 +13,20 @@ Beyond reading, the guide is a learning instrument:
   persisted per-device) over every section. The `drill` button in the top bar
   shows how many cards are due; missed cards come back sooner, known cards
   retreat to longer intervals.
+- **Pattern lab** — a deterministic agent-run simulator (the `lab` button).
+  Pick a mission, an architecture pattern (L1), a context strategy (L2),
+  compaction, and a tool surface (L3), then watch the run play out: a live
+  context-window meter, signal-integrity decay from context rot, token and
+  wall-clock costs, compaction and overflow events. The debrief grades
+  quality / cost / latency and links every finding back to the section that
+  teaches it. Same setup, same run — it's a model of the trade-offs, built
+  from the guide's own claims, not a slot machine.
+- **Flight record** — a retention dashboard (the `stats` button): study
+  streaks, a 12-week activity heatmap, per-section recall mastery from the
+  Leitner boxes, and a 14-day review-due forecast.
 - **Command palette** — `⌘K` / `Ctrl+K` / `/` opens full-text search across
-  all section content, with quick actions (start drill, copy progress link).
+  all section content, with quick actions (start drill, open the lab, open
+  the flight record, copy progress link).
 - **Team share-links** — your ledger encodes into a URL hash (no backend, no
   account). Send the link; a teammate gets a merge / replace / ignore banner.
 
@@ -61,6 +73,10 @@ src/content.ts        sections L0–L3 (typed data)
 src/content2.ts       toolbox, L4–L7, sources
 src/quiz.ts           recall-drill question bank (typed data)
 src/drill.ts          spaced-repetition scheduler + drill overlay
+src/labsim.ts         pattern-lab simulation engine (pure logic)
+src/lab.ts            pattern-lab overlay (configure → run → debrief)
+src/activity.ts       per-device study-event journal
+src/stats.ts          flight-record dashboard (streaks, mastery, forecast)
 src/palette.ts        ⌘K command palette / full-text search
 src/share.ts          progress share-links (URL-hash encoding)
 src/styles.css        design system

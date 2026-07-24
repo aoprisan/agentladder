@@ -4,6 +4,9 @@ import { sections2 } from "./content2";
 import { questionBank } from "./quiz";
 import { initDrill } from "./drill";
 import { initPalette } from "./palette";
+import { initLab } from "./lab";
+import { initStats } from "./stats";
+import { logActivity } from "./activity";
 import { buildShareUrl, readShareHash, clearShareHash } from "./share";
 
 const sections: Section[] = [...part1, ...sections2];
@@ -109,7 +112,7 @@ function render(): void {
           </div>
         </div>
         <ul class="nav-list">${navItems}</ul>
-        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · progress travels by link</p>
+        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · pattern lab · progress travels by link</p>
       </nav>
       <div class="main">
         <header class="gauge-bar" role="status" aria-live="polite">
@@ -117,6 +120,8 @@ function render(): void {
           <div class="gauge"><div class="gauge-fill" id="gauge-fill"></div></div>
           <span class="gauge-count" id="gauge-count"></span>
           <button class="bar-btn" id="btn-drill" type="button" title="Recall drill — spaced repetition over what you've read">drill</button>
+          <button class="bar-btn" id="btn-lab" type="button" title="Pattern lab — simulate an agent run and watch the trade-offs">lab</button>
+          <button class="bar-btn" id="btn-stats" type="button" title="Flight record — streaks, mastery, and review forecast">stats</button>
           <button class="bar-btn" id="btn-search" type="button" title="Search the guide (⌘K)">⌘K</button>
         </header>
         <main class="content">
@@ -135,6 +140,7 @@ function render(): void {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id!;
       ledger[id] = !ledger[id];
+      if (ledger[id]) logActivity("read");
       saveLedger(ledger);
       syncState();
     });
@@ -217,6 +223,18 @@ function toast(msg: string): void {
 const ordinalOf = (sectionId: string): string =>
   sections.find((s) => s.id === sectionId)?.ordinal ?? "";
 
+// Scroll to a section and flash it — used by lab debrief links (palette has
+// its own copy scoped to its overlay lifecycle).
+function jumpTo(sectionId: string): void {
+  const target = document.getElementById(sectionId);
+  if (!target) return;
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+  target.classList.remove("flash");
+  void target.offsetWidth;
+  target.classList.add("flash");
+  setTimeout(() => target.classList.remove("flash"), 1800);
+}
+
 function updateDrillBadge(): void {
   const btn = document.getElementById("btn-drill");
   if (!btn) return;
@@ -227,6 +245,18 @@ function updateDrillBadge(): void {
 const drill = initDrill(questionBank, ordinalOf, () => updateDrillBadge());
 updateDrillBadge();
 document.getElementById("btn-drill")?.addEventListener("click", () => drill.open());
+
+// ---------------------------------------------------------------------------
+// Pattern lab — simulate an agent run against the guide's claims (see lab.ts).
+// ---------------------------------------------------------------------------
+const lab = initLab(jumpTo);
+document.getElementById("btn-lab")?.addEventListener("click", () => lab.open());
+
+// ---------------------------------------------------------------------------
+// Flight record — streaks, mastery, and review forecast (see stats.ts).
+// ---------------------------------------------------------------------------
+const stats = initStats(sections, questionBank, () => ledger);
+document.getElementById("btn-stats")?.addEventListener("click", () => stats.open());
 
 // ---------------------------------------------------------------------------
 // Team share-links — progress that travels by URL (see share.ts).
@@ -265,6 +295,16 @@ const palette = initPalette(sections, [
     label: "Start recall drill",
     hint: "spaced-repetition cards over what you've read",
     run: () => drill.open(),
+  },
+  {
+    label: "Open the pattern lab",
+    hint: "simulate an agent run — architecture, context, tools, trade-offs",
+    run: () => lab.open(),
+  },
+  {
+    label: "Open your flight record",
+    hint: "streaks, recall mastery, and the 14-day review forecast",
+    run: () => stats.open(),
   },
   {
     label: "Copy team progress link",

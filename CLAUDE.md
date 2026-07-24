@@ -54,7 +54,26 @@ Everything renders from typed data. The moving parts:
   parses every section body in a detached `<template>` into heading-scoped
   blocks (paragraph / list-item / table-row granularity) and runs a token-AND
   scorer over them (title > heading > body weight). Also hosts quick actions
-  (start drill, copy share link) passed in from `main.ts`.
+  (start drill, open lab, open flight record, copy share link) passed in from
+  `main.ts`.
+- **`src/labsim.ts`** — the pattern-lab simulation engine, pure logic with no
+  DOM. Missions (typed attribute vectors: decomposability, open-endedness,
+  verifiability, context load…) × architecture patterns × context strategy ×
+  compaction × tool surface → a deterministic event stream with window/cost/
+  latency/quality tracking, graded findings, and a fit-for-purpose
+  recommendation. **The numbers encode the guide's claims** (context rot,
+  ~15× multi-agent token cost, tool-sprawl fumbles) — if a section's claims
+  change, re-check the corresponding model terms and finding texts here.
+- **`src/lab.ts`** — the pattern-lab UI over `labsim.ts`: configure → animated
+  run (event log + live meters) → debrief. Debrief findings link back into
+  sections via a `jumpTo` callback from `main.ts`.
+- **`src/activity.ts`** — tiny per-device study-event journal (sections read,
+  drill hits/misses) under `agentic-guide-log-v1`; shared by `drill.ts` and
+  `stats.ts` so they don't import each other.
+- **`src/stats.ts`** — the "flight record" dashboard: streaks, a 12-week
+  activity heatmap, per-section recall mastery (average Leitner box), and a
+  14-day review-due forecast. Read-only over the activity log, the SRS store
+  (via `readSrsSnapshot()` from `drill.ts`), and the ledger.
 - **`src/share.ts`** — team share-links: the ledger's done-bits packed into a
   hex payload in the URL hash (`#share=1.<hex>`, bit order = sections-array
   order, so **don't reorder sections** without bumping the payload version).
@@ -73,8 +92,10 @@ the ledger key.
 
 The ledger persists to `localStorage` under `agentic-guide-ledger-v1`
 (`STORE_KEY` in `main.ts`); drill scheduling under `agentic-guide-srs-v1`
-(`SRS_KEY` in `drill.ts`). Changing either key resets everyone's saved state
-for that feature — they are deliberately independent stores.
+(`SRS_KEY` in `drill.ts`); the study-activity journal under
+`agentic-guide-log-v1` (`LOG_KEY` in `activity.ts`). Changing any key resets
+everyone's saved state for that feature — they are deliberately independent
+stores.
 
 `src/styles.css` is the design system (imported from `main.ts`).
 `vite.config.ts` sets `base: "./"` so `dist/` is relocatable and works from a
