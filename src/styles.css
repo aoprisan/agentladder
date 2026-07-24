@@ -1,0 +1,472 @@
+/* ------------------------------------------------------------------------
+   Agentic Workflows with Claude — field guide
+   Aesthetic: engineering control panel. Dark instrument rail on the left,
+   documentation paper on the right, one amber signal color. Headings and
+   labels speak monospace (the subject's native voice); body text is a
+   quiet system sans.
+------------------------------------------------------------------------- */
+
+:root {
+  --bg: #eceef0;
+  --surface: #ffffff;
+  --ink: #171c22;
+  --muted: #5b6570;
+  --hairline: #d7dce1;
+  --rail: #14181d;
+  --rail-ink: #c9d0d7;
+  --rail-dim: #78828c;
+  --signal: #b96e08;
+  --signal-bright: #e8960c;
+  --done: #2e8f63;
+  --mono: ui-monospace, "JetBrains Mono", "Cascadia Code", "SF Mono", Menlo,
+    Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    transition: none !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+a {
+  color: var(--signal);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+a:hover {
+  color: var(--signal-bright);
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal-bright);
+  outline-offset: 2px;
+}
+
+/* Shell -------------------------------------------------------------- */
+
+.shell {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  min-height: 100vh;
+}
+
+/* Instrument rail ----------------------------------------------------- */
+
+.rail {
+  background: var(--rail);
+  color: var(--rail-ink);
+  padding: 28px 20px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.brand-mark {
+  font-family: var(--mono);
+  font-size: 22px;
+  color: var(--signal-bright);
+  line-height: 1.2;
+}
+
+.brand-title {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: 0;
+  color: #fff;
+}
+
+.brand-sub {
+  font-size: 12px;
+  color: var(--rail-dim);
+  margin: 4px 0 0;
+  line-height: 1.45;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.nav-link {
+  display: grid;
+  grid-template-columns: 34px 1fr 10px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--rail-ink);
+  text-decoration: none;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.nav-link:hover {
+  background: #1d232a;
+  color: #fff;
+}
+
+.nav-link.current {
+  background: #21282f;
+  color: #fff;
+}
+
+.nav-link .ord {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--signal-bright);
+  border: 1px solid #33404b;
+  border-radius: 4px;
+  text-align: center;
+  padding: 1px 0;
+}
+
+.nav-link .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--rail-dim);
+  justify-self: end;
+}
+
+.nav-link.done .dot {
+  background: var(--done);
+  border-color: var(--done);
+}
+
+.rail-foot {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--rail-dim);
+  margin: 0;
+}
+
+/* Gauge bar — the signature element ----------------------------------- */
+
+.gauge-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 40px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.gauge-label,
+.gauge-count {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.gauge {
+  flex: 1;
+  height: 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(100% / 9 - 1px),
+    var(--hairline) calc(100% / 9 - 1px) calc(100% / 9)
+  );
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--signal), var(--signal-bright));
+  transition: width 0.35s ease;
+}
+
+/* Content ------------------------------------------------------------- */
+
+.content {
+  max-width: 780px;
+  padding: 40px 40px 96px;
+}
+
+.intro h1 {
+  font-family: var(--mono);
+  font-size: clamp(26px, 4vw, 38px);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  margin: 12px 0 16px;
+}
+
+.lede {
+  font-size: 18px;
+  color: var(--ink);
+  max-width: 62ch;
+}
+
+.disclaimer {
+  font-size: 13.5px;
+  color: var(--muted);
+  border-left: 3px solid var(--signal);
+  padding-left: 12px;
+  max-width: 62ch;
+}
+
+.section {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 30px 34px 26px;
+  margin-top: 34px;
+  scroll-margin-top: 64px;
+}
+
+.section.done {
+  border-color: color-mix(in srgb, var(--done) 45%, var(--hairline));
+}
+
+.section-head .eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 0 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.section-head .ord {
+  color: var(--signal);
+  font-weight: 700;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.section h2 {
+  font-family: var(--mono);
+  font-size: 23px;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+  line-height: 1.25;
+}
+
+.body h3 {
+  font-family: var(--mono);
+  font-size: 15.5px;
+  margin: 26px 0 8px;
+}
+
+.body p,
+.body li {
+  color: #262d35;
+}
+
+.body ul,
+.body ol {
+  padding-left: 22px;
+}
+
+.body li {
+  margin: 5px 0;
+}
+
+.body code {
+  font-family: var(--mono);
+  font-size: 0.86em;
+  background: #f0f2f4;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 0.08em 0.32em;
+}
+
+.body pre {
+  background: var(--rail);
+  color: var(--rail-ink);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.body pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+}
+
+.body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: 14px 0;
+}
+
+.body th {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: left;
+  color: var(--muted);
+}
+
+.body th,
+.body td {
+  border-bottom: 1px solid var(--hairline);
+  padding: 8px 10px 8px 0;
+  vertical-align: top;
+}
+
+.callout {
+  border-left: 3px solid var(--signal);
+  background: #faf6ef;
+  padding: 12px 16px;
+  border-radius: 0 6px 6px 0;
+}
+
+/* Docs list ----------------------------------------------------------- */
+
+.docs {
+  margin-top: 22px;
+  border-top: 1px dashed var(--hairline);
+  padding-top: 14px;
+}
+
+.docs h4 {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.docs ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+.docs li {
+  font-size: 13.5px;
+}
+
+/* Ledger toggle ------------------------------------------------------- */
+
+.ledger-toggle {
+  margin-top: 20px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ledger-toggle:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.section.done .ledger-toggle {
+  border-color: var(--done);
+  color: var(--done);
+  background: #f0f8f4;
+}
+
+/* Responsive ---------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .rail {
+    position: static;
+    height: auto;
+    padding: 20px 16px;
+  }
+
+  .nav-list {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 6px;
+    padding-bottom: 4px;
+  }
+
+  .nav-link {
+    grid-template-columns: auto auto;
+    white-space: nowrap;
+  }
+
+  .nav-link .dot {
+    display: none;
+  }
+
+  .nav-link .nav-title {
+    font-size: 12.5px;
+  }
+
+  .gauge-bar {
+    padding: 10px 18px;
+  }
+
+  .content {
+    padding: 24px 18px 72px;
+  }
+
+  .section {
+    padding: 22px 18px;
+  }
+}

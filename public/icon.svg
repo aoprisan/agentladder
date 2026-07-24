@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="24" fill="#14181d"/>
+  <g fill="none" stroke="#e8960c" stroke-width="7" stroke-linecap="square">
+    <path d="M30 46 h28 v36 h40"/>
+    <circle cx="30" cy="46" r="8" fill="#e8960c" stroke="none"/>
+    <circle cx="98" cy="82" r="8" fill="#e8960c" stroke="none"/>
+  </g>
+  <text x="64" y="116" text-anchor="middle" font-family="monospace" font-size="20" fill="#c9d0d7">L0→L7</text>
+</svg>
