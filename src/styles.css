@@ -18,6 +18,7 @@
   --signal: #b96e08;
   --signal-bright: #e8960c;
   --done: #2e8f63;
+  --bad: #b23a3a;
   --mono: ui-monospace, "JetBrains Mono", "Cascadia Code", "SF Mono", Menlo,
     Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
@@ -71,6 +72,13 @@ a:hover {
   display: grid;
   grid-template-columns: 300px 1fr;
   min-height: 100vh;
+}
+
+/* Grid items default to min-width:auto, which lets wide content (the
+   horizontally scrolling nav on mobile) stretch the track past the
+   viewport. Let the tracks shrink; inner overflow rules take it from there. */
+.shell > * {
+  min-width: 0;
 }
 
 /* Instrument rail ----------------------------------------------------- */
@@ -425,6 +433,385 @@ a:hover {
   background: #f0f8f4;
 }
 
+/* Gauge-bar buttons ---------------------------------------------------- */
+
+.bar-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bar-btn:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.due-badge {
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 8px;
+  background: var(--signal-bright);
+  color: #fff;
+}
+
+/* Overlays (drill + palette) ------------------------------------------- */
+
+.overlay[hidden] {
+  display: none;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(16, 20, 25, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 9vh 16px 16px;
+  overflow-y: auto;
+}
+
+.overlay-card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(10, 14, 18, 0.35);
+  width: min(640px, 100%);
+  padding: 26px 30px;
+}
+
+.overlay-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+/* Recall drill ---------------------------------------------------------- */
+
+.drill-title {
+  font-family: var(--mono);
+  font-size: 20px;
+  margin: 0 0 10px;
+}
+
+.drill-pct {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.drill-note {
+  color: var(--muted);
+  font-size: 14.5px;
+  margin: 0 0 18px;
+}
+
+.drill-ord {
+  color: var(--signal);
+}
+
+.drill-prompt {
+  font-size: 17px;
+  line-height: 1.5;
+  margin: 0 0 16px;
+}
+
+.drill-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.drill-opt {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  text-align: left;
+  font: inherit;
+  font-size: 14.5px;
+  line-height: 1.5;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.drill-opt:hover:not(:disabled) {
+  border-color: var(--signal);
+}
+
+.drill-opt:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.drill-opt .opt-key {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 1px 6px;
+  flex: none;
+}
+
+.drill-opt.is-correct {
+  border-color: var(--done);
+  background: #f0f8f4;
+  opacity: 1;
+}
+
+.drill-opt.is-correct .opt-key {
+  color: var(--done);
+  border-color: var(--done);
+}
+
+.drill-opt.is-wrong {
+  border-color: var(--bad);
+  background: #fbf1f1;
+  opacity: 1;
+}
+
+.drill-opt.is-wrong .opt-key {
+  color: var(--bad);
+  border-color: var(--bad);
+}
+
+.drill-feedback {
+  margin-top: 16px;
+  border-left: 3px solid var(--signal);
+  background: #faf6ef;
+  padding: 10px 14px;
+  border-radius: 0 6px 6px 0;
+}
+
+.fb-verdict {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+}
+
+.fb-verdict.good {
+  color: var(--done);
+}
+
+.fb-verdict.bad {
+  color: var(--bad);
+}
+
+.fb-explain {
+  margin: 0;
+  font-size: 14px;
+  color: #262d35;
+}
+
+.drill-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.drill-btn {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.drill-btn:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.drill-btn.primary {
+  background: var(--signal);
+  border-color: var(--signal);
+  color: #fff;
+}
+
+.drill-btn.primary:hover {
+  background: var(--signal-bright);
+  border-color: var(--signal-bright);
+  color: #fff;
+}
+
+/* Command palette -------------------------------------------------------- */
+
+.pal-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.pal-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--hairline);
+  padding: 16px 20px;
+  font-family: var(--mono);
+  font-size: 15px;
+  color: var(--ink);
+  background: transparent;
+  outline: none;
+}
+
+.pal-results {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.pal-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 9px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.pal-item.selected {
+  background: #f2ede2;
+}
+
+.pal-ord {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--signal);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 1px 6px;
+  flex: none;
+  margin-top: 2px;
+}
+
+.pal-text {
+  min-width: 0;
+}
+
+.pal-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.pal-snip {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 2px 0 0;
+  overflow: hidden;
+}
+
+.pal-snip mark,
+.pal-title mark {
+  background: #f6dfb3;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.pal-empty {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  padding: 14px;
+}
+
+.pal-foot {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  border-top: 1px solid var(--hairline);
+  margin: 0;
+  padding: 8px 20px;
+}
+
+/* Jump flash — palette navigation lands here ---------------------------- */
+
+@keyframes section-flash {
+  0% {
+    box-shadow: 0 0 0 3px var(--signal-bright);
+  }
+  100% {
+    box-shadow: 0 0 0 3px transparent;
+  }
+}
+
+.section.flash {
+  animation: section-flash 1.6s ease-out;
+}
+
+/* Share banner ----------------------------------------------------------- */
+
+.share-banner {
+  border: 1px solid var(--signal);
+  background: #faf6ef;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 26px;
+}
+
+.share-banner p {
+  margin: 0 0 12px;
+  font-size: 14.5px;
+}
+
+.share-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Toast ------------------------------------------------------------------ */
+
+.toast {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translate(-50%, 12px);
+  z-index: 60;
+  background: var(--rail);
+  color: var(--rail-ink);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 /* Responsive ---------------------------------------------------------- */
 
 @media (max-width: 900px) {
@@ -460,6 +847,28 @@ a:hover {
 
   .gauge-bar {
     padding: 10px 18px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .gauge-label {
+    display: none;
+  }
+
+  .gauge {
+    min-width: 80px;
+  }
+
+  .overlay {
+    padding: 4vh 10px 10px;
+  }
+
+  .overlay-card {
+    padding: 20px 18px;
+  }
+
+  .pal-card {
+    padding: 0;
   }
 
   .content {
@@ -468,5 +877,12 @@ a:hover {
 
   .section {
     padding: 22px 18px;
+  }
+
+  /* Wide content tables scroll inside their own box instead of
+     stretching the page. */
+  .body table {
+    display: block;
+    overflow-x: auto;
   }
 }

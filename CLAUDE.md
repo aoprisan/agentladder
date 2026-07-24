@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 A static, zero-runtime-dependency TypeScript site (Vite) that teaches teams
 agentic workflows with Claude, organized as levels L0–L7 plus a toolbox (TB)
 and a sources/reference (REF) section. There is no backend; reading progress
-("the ledger") is persisted per-device in `localStorage`.
+("the ledger") and recall-drill scheduling are persisted per-device in
+`localStorage`, and progress can travel between people via share-links
+encoded in the URL hash.
 
 ## Commands
 
@@ -28,7 +30,7 @@ no test suite — the typecheck is the only automated check.
 
 ## Architecture
 
-Everything renders from typed data. The three moving parts:
+Everything renders from typed data. The moving parts:
 
 - **`src/content.ts`** — defines the `Section` and `DocLink` interfaces, the
   `meta` object (title/subtitle/updated/disclaimer), and `sections` L0–L3.
@@ -36,8 +38,27 @@ Everything renders from typed data. The three moving parts:
   the `Section` type from `content.ts`.
 - **`src/main.ts`** — concatenates `[...part1, ...sections2]` into one array,
   then renders the whole page by string-templating `innerHTML`. It owns ledger
-  state, the progress gauge, and an `IntersectionObserver` scrollspy that
-  highlights the current section in the nav rail.
+  state, the progress gauge, an `IntersectionObserver` scrollspy that
+  highlights the current section in the nav rail, and wires up the drill,
+  palette, and share modules below.
+- **`src/quiz.ts`** — the recall-drill question bank: `QuizQuestion` objects
+  (multiple choice + explanation) keyed to a `sectionId`. Questions are
+  authored against the section bodies — **when a section's claims change,
+  re-check its questions here**. Question `id`s are the localStorage keys for
+  scheduling state, so renaming one resets that card's schedule.
+- **`src/drill.ts`** — spaced repetition: a Leitner-box scheduler (boxes 0–5,
+  intervals 0/1/3/7/16/35 days; a miss drops the card to box 0 and re-queues
+  it in a minute) persisted under `agentic-guide-srs-v1`, plus the drill
+  modal overlay. Keyboard: 1–4 answer, Enter next, Esc close.
+- **`src/palette.ts`** — the ⌘K / Ctrl+K / `/` command palette. At startup it
+  parses every section body in a detached `<template>` into heading-scoped
+  blocks (paragraph / list-item / table-row granularity) and runs a token-AND
+  scorer over them (title > heading > body weight). Also hosts quick actions
+  (start drill, copy share link) passed in from `main.ts`.
+- **`src/share.ts`** — team share-links: the ledger's done-bits packed into a
+  hex payload in the URL hash (`#share=1.<hex>`, bit order = sections-array
+  order, so **don't reorder sections** without bumping the payload version).
+  `main.ts` shows a merge/replace/ignore banner when a share hash is present.
 
 A `Section` is `{ id, ordinal, title, tagline, body, docs }`. `body` is
 **trusted HTML authored in this repo** and injected via `innerHTML` — keep it
@@ -51,7 +72,9 @@ scrollspy all derive from the sections array automatically — no wiring needed.
 the ledger key.
 
 The ledger persists to `localStorage` under `agentic-guide-ledger-v1`
-(`STORE_KEY` in `main.ts`). Changing that key resets everyone's saved progress.
+(`STORE_KEY` in `main.ts`); drill scheduling under `agentic-guide-srs-v1`
+(`SRS_KEY` in `drill.ts`). Changing either key resets everyone's saved state
+for that feature — they are deliberately independent stores.
 
 `src/styles.css` is the design system (imported from `main.ts`).
 `vite.config.ts` sets `base: "./"` so `dist/` is relocatable and works from a
@@ -98,3 +121,7 @@ This subject moves monthly. Version-specific claims (agent teams, nested
 subagents, CLI flags) should be re-verified against
 https://code.claude.com/docs before relying on them — this caveat is surfaced
 to readers via `meta.disclaimer` and should stay accurate.
+
+When editing a section's claims, also update its questions in `src/quiz.ts`
+(they quiz the exact numbers and phrasings the sections teach). The palette's
+search index derives from the bodies automatically and needs no maintenance.
