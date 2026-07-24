@@ -23,10 +23,22 @@ just preview    # serve dist/ locally
 ## Deploy to GitHub Pages
 
 The Vite config uses `base: "./"`, so `dist/` is relocatable — it works from
-`https://<user>.github.io/<repo>/` without changes. Either:
+`https://<user>.github.io/<repo>/` without changes.
 
-- push `dist/` to a `gh-pages` branch (`npx gh-pages -d dist`), or
-- use a Pages workflow that runs `npm ci && npm run build` and uploads `dist/`.
+This repo ships a GitHub Actions workflow (`.github/workflows/deploy.yml`) that
+builds and publishes on every push to `main`. To enable it, set
+**Settings → Pages → Build and deployment → Source** to **"GitHub Actions"**
+once; deploys then happen automatically.
+
+Alternatively, `just deploy` (or `npx gh-pages -d dist`) pushes the build to a
+`gh-pages` branch.
+
+## Offline / installable (PWA)
+
+The site is a Progressive Web App: it ships a web manifest
+(`public/manifest.webmanifest`) and a dependency-free service worker
+(`public/sw.js`) that precaches the app shell, so it installs to a
+home screen and works fully offline after the first visit.
 
 ## Structure
 

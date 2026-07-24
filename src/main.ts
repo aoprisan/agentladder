@@ -168,3 +168,15 @@ function observeSections(): void {
 }
 
 render();
+
+// ---------------------------------------------------------------------------
+// PWA — register the service worker so the guide installs and works offline.
+// Registered relative to the document (works from any GitHub Pages sub-path).
+// ---------------------------------------------------------------------------
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
+      /* offline support just won't be available — the app still works */
+    });
+  });
+}
