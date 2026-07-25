@@ -377,6 +377,162 @@ a:hover {
   border-radius: 0 6px 6px 0;
 }
 
+/* Agent graphs --------------------------------------------------------- */
+/* Topology diagrams (agentgraph.ts). Inline SVG, so everything below is
+   ordinary CSS against the same palette — no fills baked into the markup. */
+
+.agraph {
+  margin: 16px 0;
+  padding: 14px 16px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #f7f9fa, var(--surface));
+  overflow-x: auto;
+}
+
+.agraph figcaption {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 10px;
+}
+
+.agraph figcaption strong {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.ag-svg {
+  display: block;
+  width: 100%;
+  max-width: var(--ag-w);
+  height: auto;
+  margin: 0 auto;
+}
+
+.ag-node rect {
+  fill: var(--surface);
+  stroke: var(--hairline);
+  stroke-width: 1.2;
+}
+
+.ag-node.io rect {
+  fill: var(--rail);
+  stroke: var(--rail);
+}
+
+.ag-node.model rect {
+  fill: #fdf6ea;
+  stroke: var(--signal);
+}
+
+/* Dashed = its own context window. */
+.ag-node.worker rect {
+  fill: #fffdf9;
+  stroke: var(--signal);
+  stroke-dasharray: 5 3;
+}
+
+.ag-node.gate rect {
+  fill: #eff7f2;
+  stroke: var(--done);
+}
+
+.ag-node.tool rect,
+.ag-node.store rect {
+  fill: #eef1f4;
+  stroke: #c2cad2;
+}
+
+.ag-label,
+.ag-sub,
+.ag-edge-label {
+  font-family: var(--mono);
+  text-anchor: middle;
+}
+
+.ag-label {
+  font-size: 11px;
+  fill: var(--ink);
+}
+
+.ag-sub,
+.ag-edge-label {
+  font-size: 9px;
+  fill: var(--muted);
+}
+
+.ag-node.io .ag-label {
+  fill: var(--rail-ink);
+}
+
+.ag-edge {
+  fill: none;
+  stroke: #aab3bc;
+  stroke-width: 1.4;
+}
+
+.ag-edge.spawn {
+  stroke: var(--signal);
+  stroke-dasharray: 5 3;
+}
+
+.ag-edge.back,
+.ag-edge.link {
+  stroke: #bcc4cc;
+  stroke-dasharray: 3 3;
+}
+
+.ag-head path {
+  fill: #aab3bc;
+}
+
+.ag-head.link path {
+  fill: #bcc4cc;
+}
+
+/* Live mode — the lab lights the node the run is currently at. */
+.ag-svg.live .ag-node {
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.ag-svg.live .ag-node.seen {
+  opacity: 0.75;
+}
+
+.ag-svg.live .ag-node.on {
+  opacity: 1;
+}
+
+.ag-svg.live .ag-node.on rect {
+  stroke: var(--signal-bright);
+  stroke-width: 2.2;
+  animation: ag-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes ag-pulse {
+  50% {
+    stroke-opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-svg.live .ag-node.on rect {
+    animation: none;
+  }
+}
+
+/* Below ~440px the boxes would render text at 4px. Scroll instead. */
+@media (max-width: 700px) {
+  .ag-svg {
+    min-width: 440px;
+  }
+}
+
 /* Docs list ----------------------------------------------------------- */
 
 .docs {
@@ -988,6 +1144,23 @@ a:hover {
   color: var(--muted);
   font-weight: 400;
   font-size: 15px;
+}
+
+/* the topology of the selected pattern, and the live one in flight */
+
+.lab-graph .agraph {
+  margin: 14px 0 0;
+}
+
+.lab-graph.flight .agraph {
+  margin: 12px 0;
+  padding: 10px 12px 6px;
+}
+
+/* Keep the in-flight diagram from crowding out the log on short screens —
+   preserveAspectRatio letterboxes it rather than cropping. */
+.lab-graph.flight .ag-svg {
+  max-height: 180px;
 }
 
 /* in-flight instruments */

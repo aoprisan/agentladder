@@ -64,6 +64,20 @@ Everything renders from typed data. The moving parts:
   recommendation. **The numbers encode the guide's claims** (context rot,
   ~15× multi-agent token cost, tool-sprawl fumbles) — if a section's claims
   change, re-check the corresponding model terms and finding texts here.
+  Every `SimEvent` also carries a `node` — the id of the place in the
+  pattern's topology where it happened, which is what lets the lab light the
+  diagram up as a run plays (see `agentgraph.ts`).
+- **`src/agentgraph.ts`** — the agent topology diagrams: pure data (nodes,
+  edges, hand-laid coordinates) plus a string renderer, no DOM. `renderGraph`
+  emits inline SVG styled entirely from `styles.css`; `renderFigure` wraps it
+  with its caption; `mermaidFor` emits the same graph as a Mermaid flowchart
+  (the architect's brief carries one into the RFC). Eleven graphs: the seven
+  L1 patterns — **their ids are the `PatternId`s**, so `graphFor(pattern)`
+  works — plus `augmented`, `loop`, `research`, and `teams`. Node ids are the
+  run positions `labsim.ts` emits; if you rename one, rename it there too or
+  the lab's live highlight silently stops moving. Section bodies mark a
+  diagram with an empty `<div data-graph="…">` and `main.ts` hydrates it after
+  render, which keeps the SVG out of the palette's search index.
 - **`src/lab.ts`** — the pattern-lab UI over `labsim.ts`: configure → animated
   run (event log + live meters) → debrief. Debrief findings link back into
   sections via a `jumpTo` callback from `main.ts`. `openWith(mission, cfg)`
@@ -112,7 +126,9 @@ that way; do not feed user or fetched input through it. `docs` renders as an
 (L0–L3) or `content2.ts` (everything else). The nav rail, progress gauge, and
 scrollspy all derive from the sections array automatically — no wiring needed.
 `ordinal` is the label shown ("L0"…"L7", "TB", "REF"); `id` is the anchor and
-the ledger key.
+the ledger key. To drop a topology diagram into a body, add an empty
+`<div data-graph="<graph id>"></div>` — `main.ts` fills it from
+`agentgraph.ts`; add the graph there first if it doesn't exist yet.
 
 The ledger persists to `localStorage` under `agentic-guide-ledger-v1`
 (`STORE_KEY` in `main.ts`); drill scheduling under `agentic-guide-srs-v1`

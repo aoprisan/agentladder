@@ -42,7 +42,9 @@ export const sections: Section[] = [
 <li><strong>Tools</strong> — act on the world (run code, call APIs, edit files)</li>
 <li><strong>Memory</strong> — persist state across steps and sessions</li>
 </ol>
+<div data-graph="augmented"></div>
 <p>An agent is an augmented LLM running <strong>in a loop</strong>: gather context → take action → verify the result → repeat until done. Every advanced technique in this guide is an elaboration of one of those four phases.</p>
+<div data-graph="loop"></div>
 
 <h3>When agents are the right choice</h3>
 <p>Use agents for open-ended problems where you can't predict the number of steps or hardcode a path, and where you have some trust in the model's decision-making. Autonomy means higher cost and the potential for compounding errors — so agents belong in <strong>sandboxed environments with guardrails and verification</strong>, especially early on.</p>
@@ -60,12 +62,18 @@ export const sections: Section[] = [
     body: `
 <p>Before reaching for full autonomy, know the workflow patterns. Anthropic's guidance, validated across dozens of customer implementations: the most successful systems use <strong>simple, composable patterns rather than heavy frameworks</strong>.</p>
 <ol>
-<li><strong>Prompt chaining</strong> — decompose a task into fixed sequential steps, each LLM call processing the previous output, optionally with programmatic "gates" between steps. Use when a task cleanly decomposes and you want accuracy over latency.</li>
-<li><strong>Routing</strong> — classify the input, then dispatch to a specialized prompt, model, or path. Keeps each downstream prompt focused, and is the natural place for cost control (cheap model for easy cases, frontier model for hard ones).</li>
-<li><strong>Parallelization</strong> — <em>sectioning</em> (independent subtasks run simultaneously) or <em>voting</em> (same task run multiple times, results aggregated). Buys speed, or confidence via diverse attempts.</li>
-<li><strong>Orchestrator–workers</strong> — a central LLM dynamically breaks down the task, delegates to worker LLMs, and synthesizes results. Unlike parallelization, the subtasks aren't known in advance. This is the backbone of most serious multi-agent systems (see L5).</li>
-<li><strong>Evaluator–optimizer</strong> — one LLM generates, another evaluates against criteria and demands revisions in a loop. Use when you have clear evaluation criteria and iteration genuinely improves output.</li>
+<li><strong>Prompt chaining</strong> — decompose a task into fixed sequential steps, each LLM call processing the previous output, optionally with programmatic "gates" between steps. Use when a task cleanly decomposes and you want accuracy over latency.
+<div data-graph="chain"></div></li>
+<li><strong>Routing</strong> — classify the input, then dispatch to a specialized prompt, model, or path. Keeps each downstream prompt focused, and is the natural place for cost control (cheap model for easy cases, frontier model for hard ones).
+<div data-graph="route"></div></li>
+<li><strong>Parallelization</strong> — <em>sectioning</em> (independent subtasks run simultaneously) or <em>voting</em> (same task run multiple times, results aggregated). Buys speed, or confidence via diverse attempts.
+<div data-graph="parallel"></div></li>
+<li><strong>Orchestrator–workers</strong> — a central LLM dynamically breaks down the task, delegates to worker LLMs, and synthesizes results. Unlike parallelization, the subtasks aren't known in advance. This is the backbone of most serious multi-agent systems (see L5).
+<div data-graph="orch"></div></li>
+<li><strong>Evaluator–optimizer</strong> — one LLM generates, another evaluates against criteria and demands revisions in a loop. Use when you have clear evaluation criteria and iteration genuinely improves output.
+<div data-graph="evalopt"></div></li>
 </ol>
+<p>Read the five diagrams together and the family resemblance shows: a solid arrow is control passing along a fixed path, a dashed fan-out is work leaving for its own context window, a green box is a check that code — not a model — performs, and a dotted return edge is the only place a loop can close. The <strong>pattern lab</strong> flies each of these against a mission and lights the diagram up as the run moves through it.</p>
 <p class="callout"><strong>Practical advice:</strong> implement these directly against the API or the Agent SDK rather than through abstraction-heavy frameworks. Frameworks that obscure the actual prompts and tool calls make debugging much harder — and debugging <em>is</em> most of the work.</p>
 `,
     docs: [

@@ -20,6 +20,7 @@ import {
 } from "./architect";
 import type { Mission } from "./labsim";
 import type { LabConfig } from "./labsim";
+import { graphFor, renderFigure } from "./agentgraph";
 
 const ARCH_KEY = "agentic-guide-architect-v1";
 
@@ -202,6 +203,7 @@ export function initArchitect(
       <p class="overlay-eyebrow">the architect · verdict — this is ${tierLabel[v.tier]}</p>
       <h3 class="drill-title">${v.top.name}</h3>
       <p class="lab-verdict">${v.stance}</p>
+      <div class="lab-graph">${renderFigure(graphFor(v.top.pattern))}</div>
       <h4 class="lab-h">scoreboard <span class="lab-h-ref">(modeled: quality · tokens · wall clock)</span></h4>
       <ul class="arch-rows">${rows}</ul>
       <h4 class="lab-h">context plan <span class="lab-h-ref">(L2)</span></h4>

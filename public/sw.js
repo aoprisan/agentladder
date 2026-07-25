@@ -11,7 +11,7 @@
  *
  * Bump CACHE_VERSION on any shell change to retire the previous cache.
  */
-const CACHE_VERSION = "v3";
+const CACHE_VERSION = "v4";
 const CACHE_NAME = `agentic-guide-${CACHE_VERSION}`;
 
 // Relative to the SW scope (the deploy path, e.g. "/agentladder/").

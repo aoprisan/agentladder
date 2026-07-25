@@ -162,6 +162,9 @@ export interface SimEvent {
   cost: number; // cumulative k tokens spent
   latency: number; // cumulative sim-minutes
   quality: number; // current expected quality 0–100
+  /** where in the topology this happened — a node id in the pattern's graph
+   *  (agentgraph.ts), so the lab can light the diagram up as the run plays */
+  node: string;
 }
 
 export interface Finding {
@@ -263,7 +266,13 @@ export function simulate(
   const qualityNow = (): number =>
     Math.max(5, Math.min(97, base - rot - fumbles * 1.2));
 
-  function emit(kind: SimEvent["kind"], text: string): void {
+  // Where the run currently is in the pattern's topology. Events that don't
+  // name a node (compaction, overflow, tool fumbles) happen wherever the run
+  // already was, so they inherit it.
+  let node = "in";
+
+  function emit(kind: SimEvent["kind"], text: string, at?: string): void {
+    if (at) node = at;
     events.push({
       kind,
       text,
@@ -271,6 +280,7 @@ export function simulate(
       cost,
       latency,
       quality: qualityNow(),
+      node,
     });
   }
 
@@ -359,6 +369,7 @@ export function simulate(
     unitCount: number,
     perUnit: { cost: number; window: number; latency: number },
     chunkText: (doneSoFar: number, chunk: number) => string,
+    at: string,
     kind: SimEvent["kind"] = "step",
   ): void {
     const chunks = unitCount <= 4 ? 1 : unitCount <= 12 ? 2 : 3;
@@ -371,7 +382,7 @@ export function simulate(
       rotTick(n);
       fumbleTick(n);
       done += n;
-      emit(kind, chunkText(done, n));
+      emit(kind, chunkText(done, n), at);
       pressure();
     }
   }
@@ -387,6 +398,7 @@ export function simulate(
         m.units,
         { cost: 1.8 + jitCost, window: 1.2 + jitFetch, latency: 0.5 },
         (done) => `one context, one pass: ${done}/${m.units} ${m.unitNoun} worked through`,
+        "llm",
       );
       break;
     }
@@ -399,11 +411,16 @@ export function simulate(
           m.units,
           { cost: 0.9 + jitCost * 0.5, window: 0.8 + jitFetch * 0.4, latency: 0.2 },
           (done) => `stage ${s + 1}/3 — ${stages[s]}: ${done}/${m.units} ${m.unitNoun}`,
+          `s${s + 1}`,
         );
         if (m.verifiable > 0.5 && s < stages.length - 1) {
           cost += 1.5;
           latency += 0.5;
-          emit("good", `gate after stage ${s + 1}: output validated programmatically before the next stage sees it`);
+          emit(
+            "good",
+            `gate after stage ${s + 1}: output validated programmatically before the next stage sees it`,
+            `g${s + 1}`,
+          );
         }
       }
       break;
@@ -412,14 +429,18 @@ export function simulate(
     case "route": {
       cost += m.units * 0.25;
       latency += 1;
-      emit("step", `classifier pass: ${m.units} ${m.unitNoun} sorted into buckets (cheap model, 0.25k each)`);
+      emit("step", `classifier pass: ${m.units} ${m.unitNoun} sorted into buckets (cheap model, 0.25k each)`, "cls");
       const k = 2 + Math.round(m.variance * 3);
       const per = m.units / k;
       cost += m.units * (1.6 + m.load * 0.35);
       latency += per * 0.35 + 1;
       window += 2;
       for (let b = 0; b < Math.min(k, 4); b++) {
-        emit("step", `specialist route ${b + 1}/${k}: ~${Math.round(per)} ${m.unitNoun} handled with a focused prompt, isolated window`);
+        emit(
+          "step",
+          `specialist route ${b + 1}/${k}: ~${Math.round(per)} ${m.unitNoun} handled with a focused prompt, isolated window`,
+          `r${Math.min(b, 2) + 1}`,
+        );
       }
       if (m.variance < 0.3) {
         emit("warn", `the inputs all looked alike — ${k - 1} of ${k} specialist routes sat nearly idle`);
@@ -431,16 +452,20 @@ export function simulate(
     case "parallel": {
       const b = Math.min(5, Math.max(2, Math.round(m.units / 8)));
       const per = Math.round(m.units / b);
-      emit("step", `sectioning: ${m.units} ${m.unitNoun} split into ${b} shards, one isolated window each`);
+      emit("step", `sectioning: ${m.units} ${m.unitNoun} split into ${b} shards, one isolated window each`, "split");
       cost += m.units * (1.9 + m.load * 0.4) * 1.05;
       latency += per * 0.5 + 1.5;
       for (let i = 0; i < Math.min(b, 3); i++) {
-        emit("step", `shard ${i + 1}/${b}: ~${per} ${m.unitNoun} processed in a fresh window — no cross-contamination`);
+        emit(
+          "step",
+          `shard ${i + 1}/${b}: ~${per} ${m.unitNoun} processed in a fresh window — no cross-contamination`,
+          `w${i + 1}`,
+        );
       }
       window += b * 1.5;
       cost += 3;
       latency += 1;
-      emit("step", `aggregation: ${b} shard summaries merged in the main window (+${fmtK(b * 1.5)})`);
+      emit("step", `aggregation: ${b} shard summaries merged in the main window (+${fmtK(b * 1.5)})`, "agg");
       if (m.verifiable > 0.7) {
         cost += 2;
         latency += 1;
@@ -454,7 +479,7 @@ export function simulate(
       cost += 6;
       latency += 1.5;
       window += 4;
-      emit("step", "lead agent studies the mission and decomposes it — subtasks weren't knowable up front");
+      emit("step", "lead agent studies the mission and decomposes it — subtasks weren't knowable up front", "lead");
       const w = Math.min(4, Math.max(2, Math.round(m.units / 4)));
       const rounds = m.known < 0.5 ? 2 : 1;
       for (let r = 0; r < rounds; r++) {
@@ -465,13 +490,14 @@ export function simulate(
           rounds === 2 && r === 0
             ? `round 1: ${w} workers explore in parallel windows; the lead reads their reports and re-plans`
             : `${w} workers execute in parallel windows — objective, output format and boundaries spelled out per task`,
+          `w${Math.min(r, 2) + 1}`,
         );
         window += w * 2.5;
         pressure();
       }
       cost += 8;
       latency += 2;
-      emit("step", "synthesis: the lead merges worker output into one coherent result");
+      emit("step", "synthesis: the lead merges worker output into one coherent result", "synth");
       fumbleTick(m.units * 0.25);
       break;
     }
@@ -482,6 +508,7 @@ export function simulate(
         m.units,
         { cost: 1.6 + jitCost, window: 1.1 + jitFetch, latency: 0.4 },
         (done) => `generator: first full draft covering ${done}/${m.units} ${m.unitNoun}`,
+        "gen",
       );
       for (let e = 1; e <= 2; e++) {
         cost += m.units * 0.9 + 4;
@@ -493,6 +520,7 @@ export function simulate(
           m.verifiable < 0.4 && e === 2
             ? "revision round 2: without crisp criteria, critic and generator start arguing in circles"
             : `critic scores the draft against the rubric and demands revisions — round ${e}`,
+          "eval",
         );
         pressure();
       }
@@ -502,7 +530,7 @@ export function simulate(
     case "agent": {
       const loops = Math.round(m.units * (1.15 + m.open * 0.6));
       latency += 0.5;
-      emit("step", `agent loop engaged: gather context → act → verify → repeat (est. ${loops} iterations, its call)`);
+      emit("step", `agent loop engaged: gather context → act → verify → repeat (est. ${loops} iterations, its call)`, "agent");
       const flavors = m.agentFlavor;
       const chunks = 3;
       let done = 0;
@@ -515,15 +543,15 @@ export function simulate(
         fumbleTick(n);
         done += n;
         const fi = Math.round((c * (flavors.length - 1)) / (chunks - 1));
-        emit("step", `iteration ${done}/${loops}: ${flavors[fi]}`);
+        emit("step", `iteration ${done}/${loops}: ${flavors[fi]}`, c === 1 ? "tools" : "agent");
         pressure();
       }
       if (m.verifiable > 0.6) {
         cost += 3;
         latency += 1.5;
-        emit("good", "self-verification: the agent runs the check itself before declaring victory");
+        emit("good", "self-verification: the agent runs the check itself before declaring victory", "check");
       } else {
-        emit("warn", "no crisp check exists — the agent grades its own homework and stops when it feels done");
+        emit("warn", "no crisp check exists — the agent grades its own homework and stops when it feels done", "check");
       }
       break;
     }
@@ -534,6 +562,7 @@ export function simulate(
   emit(
     quality >= 76 ? "good" : quality >= 55 ? "info" : "bad",
     `run complete — ${fmtK(cost)} tokens, ${Math.round(latency)} sim-minutes, signal integrity ${Math.round(quality)}%`,
+    "out",
   );
 
   // --- findings --------------------------------------------------------------------
