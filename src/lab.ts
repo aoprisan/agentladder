@@ -18,6 +18,7 @@ import {
   type SimResult,
   type PatternId,
 } from "./labsim";
+import { graphFor, renderFigure, renderGraph } from "./agentgraph";
 
 export interface LabHandle {
   open(): void;
@@ -138,6 +139,7 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
           ${patternRows}
         </div>
       </div>
+      <div class="lab-graph">${renderFigure(graphFor(cfg.pattern))}</div>
       <div class="lab-row">
         <div>
           <h4 class="lab-h">context strategy <span class="lab-h-ref">(L2)</span></h4>
@@ -210,6 +212,7 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
     card.innerHTML = `
       <p class="overlay-eyebrow">pattern lab · in flight</p>
       <h3 class="drill-title">${mission.name} <span class="lab-via">via ${pattern.name.toLowerCase()}</span></h3>
+      <div class="lab-graph flight">${renderGraph(graphFor(cfg.pattern), { live: true })}</div>
       <div class="lab-meters">
         <div class="lab-meter">
           <span class="lab-meter-label">context window</span>
@@ -239,8 +242,19 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
     const sigVal = card.querySelector<HTMLElement>("#lab-signal-val")!;
     const costEl = card.querySelector<HTMLElement>("#lab-cost")!;
     const clockEl = card.querySelector<HTMLElement>("#lab-clock")!;
+    const graphNodes = Array.from(card.querySelectorAll<SVGGElement>(".ag-node"));
 
     let i = 0;
+
+    // Move the light along the topology. Nodes the run has already visited
+    // stay half-lit, so the path taken reads at a glance.
+    function lightNode(id: string): void {
+      for (const el of graphNodes) {
+        const on = el.dataset.node === id;
+        el.classList.toggle("on", on);
+        if (on) el.classList.add("seen");
+      }
+    }
 
     function showEvent(): void {
       const ev = result.events[i];
@@ -259,6 +273,7 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
       sigVal.textContent = `${Math.round(ev.quality)}%`;
       costEl.textContent = `${Math.round(ev.cost)}k`;
       clockEl.textContent = `${Math.round(ev.latency)}m`;
+      lightNode(ev.node);
       i += 1;
     }
 

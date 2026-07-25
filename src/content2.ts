@@ -124,6 +124,7 @@ export const sections2: Section[] = [
 <li>The cost is real: agents use ~4× the tokens of chat; <strong>multi-agent systems ~15×</strong>. Use them where task value justifies the spend.</li>
 <li><strong>Architecture follows task structure.</strong> Multi-agent wins for <em>breadth-first</em> problems that decompose into independent parallel threads. It's a poor fit for tightly coupled work where all agents need shared context — much coding falls in this category.</li>
 </ul>
+<div data-graph="research"></div>
 
 <h3>Hard-won engineering lessons</h3>
 <ul>
@@ -135,6 +136,8 @@ export const sections2: Section[] = [
 
 <h3>Agent teams (2026)</h3>
 <p>In February 2026 Claude Code shipped <strong>agent teams</strong> (research preview): one session acts as team lead; teammates run independently, each in its own context window and Git worktree — and unlike subagents, teammates <strong>communicate with each other directly</strong> (messaging, broadcasting, plan approval), not just report to a parent. Good for parallel research and review where teammates challenge each other's findings, and for features where each teammate owns a distinct component. Costs: real coordination overhead and token usage — same rule as always: use it when the task actually decomposes.</p>
+<div data-graph="teams"></div>
+<p>The two diagrams differ in one edge: subagents only report upward, teammates also talk sideways. That single edge is what buys you review that argues back — and what buys you a coordination bill.</p>
 <p>The community pattern that agent teams formalize — parallel Claude Code sessions in Git worktrees on independent tasks — remains useful on its own and is the cheapest entry into multi-agent work.</p>
 `,
     docs: [

@@ -10,6 +10,7 @@ import { initArchitect } from "./architectui";
 import { readArchHash } from "./architect";
 import { initCheckride, readWingsHash } from "./checkride";
 import { logActivity } from "./activity";
+import { graphById, renderFigure } from "./agentgraph";
 import { buildShareUrl, readShareHash, clearShareHash } from "./share";
 
 const sections: Section[] = [...part1, ...sections2];
@@ -183,8 +184,20 @@ function render(): void {
     });
   });
 
+  hydrateGraphs();
   syncState();
   observeSections();
+}
+
+// Section bodies mark where a topology diagram goes with an empty
+// `<div data-graph="…">`; the SVG is built here so the diagrams stay typed
+// data (agentgraph.ts) instead of hand-written markup — and so the palette's
+// index, which reads the body strings, never sees a wall of SVG.
+function hydrateGraphs(): void {
+  app!.querySelectorAll<HTMLElement>("[data-graph]").forEach((slot) => {
+    const graph = graphById(slot.dataset.graph!);
+    if (graph) slot.innerHTML = renderFigure(graph);
+  });
 }
 
 function syncState(): void {

@@ -111,6 +111,20 @@ export const questionBank: QuizQuestion[] = [
     explain:
       "The most successful systems use simple, composable patterns rather than heavy frameworks. Frameworks that hide the actual prompts and tool calls make debugging — which is most of the work — much harder.",
   },
+  {
+    id: "patterns-5",
+    sectionId: "patterns",
+    prompt: "In the pattern topologies, what does a dashed fan-out edge into a dashed box mean?",
+    options: [
+      "An optional step that may be skipped",
+      "Work leaving for its own isolated context window",
+      "A retry after a failure",
+      "A cheaper model handling the step",
+    ],
+    answer: 1,
+    explain:
+      "Dashed fan-out = work handed to a fresh, isolated window (parallelization's shards, orchestrator's workers). Solid arrows are control moving along a fixed path, green boxes are checks that code — not a model — performs, and a dotted return edge is where a loop closes.",
+  },
 
   // L2 — context engineering ------------------------------------------------
   {

@@ -22,6 +22,7 @@ import {
   type Mission,
   type PatternId,
 } from "./labsim";
+import { graphFor, mermaidFor } from "./agentgraph";
 
 export type TraitKey =
   | "scale"
@@ -457,6 +458,12 @@ ${v.stance}
 ${v.top.why}
 
 Runner-up: **${runner.name}** (${runner.quality}% / ${runner.cost}k) — ${runner.why}
+
+## Topology
+\`\`\`mermaid
+${mermaidFor(graphFor(v.top.pattern))}
+\`\`\`
+*${graphFor(v.top.pattern).caption}*
 
 ## Scoreboard (modeled)
 | # | pattern | fit | quality | tokens | wall clock |
