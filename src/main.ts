@@ -6,6 +6,8 @@ import { initDrill } from "./drill";
 import { initPalette } from "./palette";
 import { initLab } from "./lab";
 import { initStats } from "./stats";
+import { initBlackBox } from "./blackboxui";
+import { initBench } from "./bench";
 import { initArchitect } from "./architectui";
 import { readArchHash } from "./architect";
 import { initCheckride, readWingsHash } from "./checkride";
@@ -147,7 +149,7 @@ function render(): void {
           </div>
         </div>
         <ul class="nav-list">${navItems}</ul>
-        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · architect · pattern lab · checkride · progress travels by link</p>
+        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · architect · pattern lab · black box · bench · checkride · progress travels by link</p>
       </nav>
       <div class="main">
         <header class="gauge-bar" role="status" aria-live="polite">
@@ -157,6 +159,8 @@ function render(): void {
           <button class="bar-btn" id="btn-architect" type="button" title="The architect — profile a real task, get a ranked design and an exportable decision brief">architect</button>
           <button class="bar-btn" id="btn-drill" type="button" title="Recall drill — spaced repetition over what you've read">drill</button>
           <button class="bar-btn" id="btn-lab" type="button" title="Pattern lab — simulate an agent run and watch the trade-offs">lab</button>
+          <button class="bar-btn" id="btn-bb" type="button" title="The black box — read a recorded agent run and find where it went wrong">black box</button>
+          <button class="bar-btn" id="btn-bench" type="button" title="The bench — review your own CLAUDE.md, prompt, or tool description">bench</button>
           <button class="bar-btn" id="btn-ride" type="button" title="The checkride — 12-question exam, pass mark 80%, shareable wings">checkride</button>
           <button class="bar-btn" id="btn-stats" type="button" title="Flight record — streaks, mastery, and review forecast">stats</button>
           <button class="bar-btn" id="btn-search" type="button" title="Search the guide (⌘K)">⌘K</button>
@@ -303,6 +307,20 @@ const lab = initLab(jumpTo);
 document.getElementById("btn-lab")?.addEventListener("click", () => lab.open());
 
 // ---------------------------------------------------------------------------
+// The black box — trajectory review over recorded runs (blackboxui.ts). The
+// only exercise here that hands you an answer with nothing highlighted.
+// ---------------------------------------------------------------------------
+const blackbox = initBlackBox(jumpTo, ordinalOf);
+document.getElementById("btn-bb")?.addEventListener("click", () => blackbox.open());
+
+// ---------------------------------------------------------------------------
+// The bench — review a real artifact against the guide's rules (bench.ts).
+// Nothing pasted here is persisted or leaves the tab; see the module header.
+// ---------------------------------------------------------------------------
+const bench = initBench(jumpTo, ordinalOf, toast);
+document.getElementById("btn-bench")?.addEventListener("click", () => bench.open());
+
+// ---------------------------------------------------------------------------
 // The architect — profile a real task, get a design + brief (architectui.ts).
 // A #arch= link opens straight onto the shared verdict.
 // ---------------------------------------------------------------------------
@@ -383,6 +401,16 @@ const palette = initPalette(sections, [
     label: "Take the checkride",
     hint: "12 questions, one pass, 80% to earn shareable wings",
     run: () => checkride.open(),
+  },
+  {
+    label: "Open the black box",
+    hint: "read a recorded agent run and find the turns where it went wrong",
+    run: () => blackbox.open(),
+  },
+  {
+    label: "Review an artifact on the bench",
+    hint: "your CLAUDE.md, prompt, or tool description — line-anchored findings, stays on this device",
+    run: () => bench.open(),
   },
   {
     label: "Open the pattern lab",

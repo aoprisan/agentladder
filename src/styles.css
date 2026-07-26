@@ -1735,3 +1735,585 @@ a:hover {
     display: none;
   }
 }
+
+/* The black box ---------------------------------------------------------
+   A transcript reader. Deliberately uniform: clean turns and faulty turns
+   look identical until the debrief, because that is the exercise.
+------------------------------------------------------------------------ */
+
+.bb-card {
+  width: min(880px, 100%);
+}
+
+.bb-roster {
+  grid-template-columns: 1fr;
+  gap: 0;
+}
+
+.bb-incident .bb-outcome {
+  display: block;
+  font-size: 13px;
+  color: var(--bad);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.bb-best {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 6px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.bb-best.bb-new {
+  color: var(--muted);
+}
+
+.bb-setting {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.bb-brief {
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--signal);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 0 0 16px;
+  background: #fbfbfa;
+}
+
+.bb-brief p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.bb-brief p:last-child {
+  margin-bottom: 0;
+}
+
+.bb-brief-k {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-right: 8px;
+}
+
+.bb-brief-k.bad {
+  color: var(--bad);
+}
+
+/* The spine — one tick per turn, doubling as a jump strip and a progress
+   readout of how much of the run you have flagged. */
+.bb-spine {
+  display: flex;
+  gap: 3px;
+  margin: 0 0 14px;
+}
+
+.bb-tick {
+  flex: 1;
+  height: 8px;
+  min-width: 6px;
+  padding: 0;
+  border: none;
+  border-radius: 2px;
+  background: var(--hairline);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.bb-tick:hover {
+  background: var(--rail-dim);
+}
+
+.bb-tick.flagged {
+  background: var(--signal);
+}
+
+.bb-turns {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.bb-turn {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.bb-turn.flagged {
+  background: #fdf7ee;
+  box-shadow: inset 3px 0 0 var(--signal);
+}
+
+.bb-turn-gutter {
+  text-align: right;
+  padding-top: 2px;
+}
+
+.bb-n {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.bb-turn-head {
+  margin: 0 0 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.bb-actor {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  padding: 2px 6px;
+  border: 1px solid var(--hairline);
+  color: var(--muted);
+  background: var(--bg);
+}
+
+.bb-actor.user,
+.bb-actor.system {
+  border-color: var(--rail-dim);
+  color: var(--rail);
+}
+
+.bb-actor.tool {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.bb-actor.result {
+  border-color: var(--done);
+  color: var(--done);
+}
+
+.bb-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.bb-text {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+.bb-code {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  background: var(--rail);
+  color: var(--rail-ink);
+  border-radius: 6px;
+  padding: 9px 12px;
+  margin: 8px 0 0;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.bb-flag {
+  margin-top: 9px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--hairline);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.bb-flag:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.bb-flag.on {
+  border-style: solid;
+  border-color: var(--signal);
+  background: var(--signal);
+  color: #fff;
+}
+
+.bb-picker {
+  margin-top: 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--surface);
+}
+
+.bb-picker-h {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+
+.bb-fault-opt {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  padding: 6px 8px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+}
+
+.bb-fault-opt:hover {
+  background: var(--bg);
+  border-color: var(--hairline);
+}
+
+.bb-fault-opt.on {
+  border-color: var(--signal);
+  background: #fdf7ee;
+}
+
+.bb-fault-opt strong {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  display: block;
+}
+
+.bb-fault-opt span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.bb-fault-clear {
+  margin-top: 6px;
+  font-size: 12px;
+  background: none;
+  border: none;
+  color: var(--bad);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.bb-submitbar {
+  position: sticky;
+  bottom: -16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border-top: 1px solid var(--hairline);
+  padding: 12px 0 2px;
+}
+
+.bb-count {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.bb-verdicts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bb-verdict {
+  border: 1px solid var(--hairline);
+  border-left-width: 3px;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.bb-verdict.good { border-left-color: var(--done); }
+.bb-verdict.part { border-left-color: var(--signal); }
+.bb-verdict.bad { border-left-color: var(--bad); }
+.bb-verdict.note { border-left-color: var(--rail-dim); }
+
+.bb-verdict-head {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.bb-vn {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-right: 6px;
+}
+
+.bb-vlabel {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.bb-verdict.good .bb-vlabel { color: var(--done); }
+.bb-verdict.part .bb-vlabel { color: var(--signal); }
+.bb-verdict.bad .bb-vlabel { color: var(--bad); }
+.bb-verdict.note .bb-vlabel { color: var(--muted); }
+
+.bb-vtext {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.bb-why {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* The bench -------------------------------------------------------------
+   An editor over a findings list. The editor is the source of truth for
+   line numbers, so findings link back into it rather than duplicating it.
+------------------------------------------------------------------------ */
+
+.bn-card {
+  width: min(900px, 100%);
+}
+
+.bn-kinds {
+  margin-bottom: 6px;
+}
+
+.bn-kind-blurb {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 12px;
+}
+
+.bn-editor {
+  width: 100%;
+  min-height: 220px;
+  max-height: 42vh;
+  resize: vertical;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  tab-size: 2;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: #fbfbfa;
+  color: var(--ink);
+  white-space: pre;
+  overflow: auto;
+}
+
+.bn-editor:focus {
+  background: var(--surface);
+}
+
+.bn-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 10px 0 0;
+}
+
+.bn-meta,
+.bn-history {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.bn-history {
+  margin: 12px 0 0;
+  line-height: 1.6;
+}
+
+.bn-history-note {
+  color: var(--done);
+}
+
+.bn-empty {
+  margin-top: 18px;
+  border: 1px dashed var(--hairline);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.bn-empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.bn-strengths {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.bn-strengths li {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--done);
+}
+
+.bn-findings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bn-finding {
+  position: relative;
+  border: 1px solid var(--hairline);
+  border-left-width: 3px;
+  border-radius: 8px;
+  padding: 11px 14px;
+}
+
+.bn-finding.sev-block { border-left-color: var(--bad); }
+.bn-finding.sev-warn { border-left-color: var(--signal); }
+.bn-finding.sev-note { border-left-color: var(--rail-dim); }
+
+.bn-finding-head {
+  margin: 0 0 7px;
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.bn-sev {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+.bn-sev.sev-block { color: var(--bad); }
+.bn-sev.sev-warn { color: var(--signal); }
+.bn-sev.sev-note { color: var(--muted); }
+
+.bn-finding-title {
+  font-weight: 600;
+  font-size: 14.5px;
+}
+
+.bn-line {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--signal);
+  background: none;
+  border: none;
+  border-bottom: 1px dashed currentColor;
+  padding: 0;
+  cursor: pointer;
+}
+
+.bn-line-doc {
+  color: var(--muted);
+  border-bottom: none;
+  cursor: default;
+}
+
+.bn-excerpt {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--rail);
+  color: var(--rail-ink);
+  border-radius: 6px;
+  padding: 8px 11px;
+  margin: 0 0 8px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bn-detail {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.bn-fix {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.bn-fix-k {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--done);
+  margin-right: 7px;
+}
+
+.bn-rule {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-left: 10px;
+}
+
+.bn-idx {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--hairline);
+}
+
+.bn-export {
+  margin-top: 14px;
+}
+
+@media (max-width: 700px) {
+  .bb-turn {
+    grid-template-columns: 26px 1fr;
+    gap: 8px;
+  }
+
+  .bb-spine {
+    gap: 2px;
+  }
+}
+
+.fr-sub {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.6;
+}

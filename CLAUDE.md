@@ -105,13 +105,51 @@ Everything renders from typed data. The moving parts:
   not cryptography; the name is the only URL-sourced string rendered into
   HTML and `main.ts` escapes it. Best local result persists under
   `agentic-guide-wings-v1`.
+- **`src/blackbox.ts`** — the black box: **trajectory review**, the one
+  exercise here that hands the reader an answer with nothing highlighted.
+  Pure data + scoring, no DOM. Four recorded agent runs (`INCIDENTS`) that
+  went wrong, each a list of `Turn`s; the faulty turns carry a `FaultId` from
+  a ten-entry taxonomy (`FAULTS`) and expert commentary. The reader flags
+  turns and names the fault; `scoreCalls` is set comparison with partial
+  credit — exact 2 pts, right turn/wrong fault 1 pt, false alarm −1, which is
+  what stops "flag everything" from scoring. **Every `Fault.ref` is a section
+  id**, so the debrief links back into the guide; when a section's claims
+  change, re-check the fault blurbs and the per-turn `why` texts. Best result
+  per incident persists under `agentic-guide-blackbox-v1`.
+- **`src/blackboxui.ts`** — the black box overlay: roster → transcript (flag
+  turns, spine strip for navigation) → debrief. Turn text is escaped, not
+  trusted HTML, unlike section bodies.
+- **`src/rubric.ts`** — the bench's review engine: a static rule set over a
+  real artifact the reader pastes in (`ArtifactKind` = CLAUDE.md / agent
+  prompt / tool description). Pure logic — regex and counting, no network.
+  Each `Rule` emits line-anchored `Finding`s carrying a severity, a detail, a
+  concrete fix, and a `ref` to the section that justifies it; a linter that
+  can't cite its reason is just an opinion with a line number. Also exports
+  `buildReviewMarkdown` (exportable review) and `SAMPLES` (a deliberately bad
+  artifact of each kind, so the bench does something on first open). **The
+  rules encode the guide's claims** — re-check the rules pointed at a section
+  when that section changes. Note `contextBudget` lives outside `RULES`
+  because it needs the artifact kind, which `Rule.run` doesn't receive.
+- **`src/bench.ts`** — the bench UI: editor → findings, with line links that
+  select the offending line back in the textarea. **The pasted text is never
+  persisted, never put in the URL, and never leaves the tab** — people paste
+  real project files, and one of the rules exists to catch the credentials
+  that occasionally come with them. Only a scoreboard (kind, score, tokens,
+  timestamp — no content) persists, under `agentic-guide-bench-v1`.
 - **`src/activity.ts`** — tiny per-device study-event journal (sections read,
-  drill hits/misses) under `agentic-guide-log-v1`; shared by `drill.ts` and
-  `stats.ts` so they don't import each other.
+  drill hits/misses, black-box calls, bench runs) under
+  `agentic-guide-log-v1`; shared by `drill.ts`, `blackboxui.ts`, `bench.ts`
+  and `stats.ts` so they don't import each other. Drill `hit`/`miss` and
+  black-box `found`/`overlooked` are separate kinds on purpose: the flight
+  record reports drill accuracy as recall from memory, and folding
+  trajectory-review calls into it would silently change what that number
+  means.
 - **`src/stats.ts`** — the "flight record" dashboard: streaks, a 12-week
-  activity heatmap, per-section recall mastery (average Leitner box), and a
-  14-day review-due forecast. Read-only over the activity log, the SRS store
-  (via `readSrsSnapshot()` from `drill.ts`), and the ledger.
+  activity heatmap, per-section recall mastery (average Leitner box), a
+  trajectory-review panel (per-incident best scores from `readBlackBox()`),
+  and a 14-day review-due forecast. Read-only over the activity log, the SRS
+  store (via `readSrsSnapshot()` from `drill.ts`), the black-box store, and
+  the ledger.
 - **`src/share.ts`** — team share-links: the ledger's done-bits packed into a
   hex payload in the URL hash (`#share=1.<hex>`, bit order = sections-array
   order, so **don't reorder sections** without bumping the payload version).
@@ -136,8 +174,11 @@ The ledger persists to `localStorage` under `agentic-guide-ledger-v1`
 `agentic-guide-log-v1` (`LOG_KEY` in `activity.ts`); the architect's last
 interview under `agentic-guide-architect-v1` (`ARCH_KEY` in
 `architectui.ts`); the best checkride result under `agentic-guide-wings-v1`
-(`WINGS_KEY` in `checkride.ts`). Changing any key resets everyone's saved
-state for that feature — they are deliberately independent stores.
+(`WINGS_KEY` in `checkride.ts`); black-box incident records under
+`agentic-guide-blackbox-v1` (`BB_KEY` in `blackbox.ts`); the bench's
+content-free scoreboard under `agentic-guide-bench-v1` (`BENCH_KEY` in
+`bench.ts`). Changing any key resets everyone's saved state for that feature
+— they are deliberately independent stores.
 
 Three URL-hash payloads coexist and are mutually exclusive: `#share=1.…`
 (ledger bits, `share.ts`), `#arch=1.…` (architect answers, `architect.ts`),
@@ -193,5 +234,8 @@ https://code.claude.com/docs before relying on them — this caveat is surfaced
 to readers via `meta.disclaimer` and should stay accurate.
 
 When editing a section's claims, also update its questions in `src/quiz.ts`
-(they quiz the exact numbers and phrasings the sections teach). The palette's
-search index derives from the bodies automatically and needs no maintenance.
+(they quiz the exact numbers and phrasings the sections teach), the matching
+model terms and finding texts in `src/labsim.ts`, the fault blurbs and per-turn
+commentary in `src/blackbox.ts`, and any rule in `src/rubric.ts` whose `ref`
+points at that section. The palette's search index derives from the bodies
+automatically and needs no maintenance.

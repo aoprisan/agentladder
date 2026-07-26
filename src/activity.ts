@@ -9,7 +9,11 @@
 const LOG_KEY = "agentic-guide-log-v1";
 const CAP = 4000; // oldest events fall off; the heatmap only looks back 12 weeks
 
-export type ActivityKind = "read" | "hit" | "miss";
+// Drill answers ("hit"/"miss") stay distinct from black-box calls
+// ("found"/"overlooked") on purpose: the flight record reports drill accuracy
+// as recall from memory, and folding trajectory-review calls into that number
+// would quietly change what it means.
+export type ActivityKind = "read" | "hit" | "miss" | "found" | "overlooked" | "bench";
 
 export interface ActivityEvent {
   t: number; // epoch ms
