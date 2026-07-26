@@ -10,6 +10,7 @@ import type { Section } from "./content";
 import type { QuizQuestion } from "./quiz";
 import { readActivity } from "./activity";
 import { readSrsSnapshot } from "./drill";
+import { INCIDENTS, readBlackBox } from "./blackbox";
 
 const DAY = 86_400_000;
 const HEAT_DAYS = 84; // 12 weeks
@@ -170,6 +171,33 @@ export function initStats(
       <h4 class="lab-h">review forecast <span class="lab-h-ref">(next 14 days)</span></h4>
       <div class="fr-forecast">${bars}</div>`;
 
+    // --- trajectory review ---------------------------------------------------
+    // Deliberately not folded into the recall numbers above: reading a run is a
+    // different skill from remembering what a section said, and a reader who is
+    // strong at one and weak at the other should be able to see that.
+    const bb = readBlackBox();
+    const found = events.filter((e) => e.k === "found").length;
+    const overlooked = events.filter((e) => e.k === "overlooked").length;
+    const flown = INCIDENTS.filter((i) => bb[i.id]).length;
+    const incidentRows = INCIDENTS.map((inc) => {
+      const rec = bb[inc.id];
+      return `
+        <div class="fr-mastery-row">
+          <span class="ord pal-ord">${rec ? rec.lastGrade : "—"}</span>
+          <span class="fr-mastery-title">${inc.title}</span>
+          <div class="fr-mastery-bar"><div class="fr-mastery-fill" style="width:${rec?.best ?? 0}%"></div></div>
+          <span class="fr-mastery-meta">${rec ? `${rec.best}% · ${rec.runs} review${rec.runs === 1 ? "" : "s"}` : "unflown"}</span>
+        </div>`;
+    }).join("");
+    const eye =
+      found + overlooked > 0
+        ? `${Math.round((found / (found + overlooked)) * 100)}% of planted faults spotted across ${flown}/${INCIDENTS.length} incidents.`
+        : `No incidents reviewed yet — the black box is where reading a run gets practised.`;
+    const trajectory = `
+      <h4 class="lab-h">trajectory review <span class="lab-h-ref">(the black box)</span></h4>
+      <p class="fr-sub">${eye}</p>
+      <div class="fr-mastery">${incidentRows}</div>`;
+
     card.innerHTML = `
       <p class="overlay-eyebrow">flight record</p>
       <h3 class="drill-title">Your study telemetry</h3>
@@ -177,6 +205,7 @@ export function initStats(
       ${tiles}
       ${heat}
       ${mastery}
+      ${trajectory}
       ${forecast}
       <div class="drill-actions">
         <button class="drill-btn" data-act="close" type="button">close</button>
