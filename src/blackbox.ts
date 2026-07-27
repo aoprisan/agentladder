@@ -102,7 +102,7 @@ export const FAULTS: Fault[] = [
     name: "missing guardrail",
     blurb:
       "An irreversible or outward-facing action taken without a confirmation, a sandbox, or a dry run.",
-    ref: "production",
+    ref: "hardening",
   },
   {
     id: "goal-drift",

@@ -129,7 +129,7 @@ export const CONTROLS: Control[] = [
     friction: 4,
     cost: "The most expensive control here. It converts an autonomous run into a queue, and a queue that fires forty times a day is a queue somebody disables.",
     family: "gate",
-    ref: "production",
+    ref: "hardening",
   },
   {
     id: "pathguard",
@@ -139,7 +139,7 @@ export const CONTROLS: Control[] = [
     friction: 2,
     cost: "Costs an owners file and an extra reviewer on the changes that touch those paths.",
     family: "gate",
-    ref: "production",
+    ref: "hardening",
   },
   {
     id: "sandbox",
@@ -149,7 +149,7 @@ export const CONTROLS: Control[] = [
     friction: 3,
     cost: "Costs image maintenance and the friction of an environment that is never quite the developer's own.",
     family: "boundary",
-    ref: "production",
+    ref: "hardening",
   },
   {
     id: "egress",
@@ -159,7 +159,7 @@ export const CONTROLS: Control[] = [
     friction: 2,
     cost: "Costs a proxy and a standing trickle of 'please add this host' requests.",
     family: "boundary",
-    ref: "production",
+    ref: "hardening",
   },
   {
     id: "workspace",
@@ -169,7 +169,7 @@ export const CONTROLS: Control[] = [
     friction: 1,
     cost: "Costs a one-off cleanup and a secrets-manager habit the team probably wanted anyway.",
     family: "boundary",
-    ref: "production",
+    ref: "hardening",
   },
   {
     id: "scopedcreds",
@@ -179,7 +179,7 @@ export const CONTROLS: Control[] = [
     friction: 3,
     cost: "Costs real identity work: a principal per agent, rotation, and the first week of 403s.",
     family: "identity",
-    ref: "production",
+    ref: "hardening",
   },
   {
     id: "mcpreview",
@@ -209,7 +209,7 @@ export const CONTROLS: Control[] = [
     friction: 1,
     cost: "Costs storage and the discipline of someone actually reading the alerts.",
     family: "observe",
-    ref: "production",
+    ref: "hardening",
   },
 ];
 

@@ -345,6 +345,34 @@ export const GRAPHS: AgentGraph[] = [
       e("agent", "creds", "link", undefined, true, "h"),
     ],
   },
+  {
+    id: "defense",
+    title: "Where the controls sit",
+    caption:
+      "The trust boundary again, read from the defender's side. Three gates on one line, and the thing worth noticing is that none of them is the model's own judgement: permission rules are matched before the call, the hook reads the arguments the rules could not anticipate, and the OS boundary holds on the running process whatever the model decided to run. The transcript is drawn off to the side because it never blocks anything.",
+    nodes: [
+      n("untrusted", 214, 46, "io", "untrusted input", "page · ticket · tool result", 214),
+      n("ctx", 214, 130, "store", "context window", "one flat token stream", 214),
+      n("agent", 214, 214, "model", "agent", "own scoped identity", 214),
+      n("perms", 214, 298, "gate", "permission rules", "deny wins · merged, not overridden", 250),
+      n("hook", 214, 382, "gate", "PreToolUse hook", "sees the arguments", 214),
+      n("os", 214, 466, "gate", "OS sandbox", "filesystem + egress", 214),
+      n("world", 214, 550, "io", "the world", undefined, 130),
+      n("secrets", 470, 466, "store", "secrets", "denied · masked", 150),
+      n("log", 470, 382, "store", "transcript", "detects, never blocks", 176),
+    ],
+    edges: [
+      e("untrusted", "ctx", "flow", "framed as data", undefined, "v"),
+      e("ctx", "agent", "flow", undefined, undefined, "v"),
+      e("agent", "perms", "flow", "every tool call", undefined, "v"),
+      e("perms", "hook", "flow", undefined, undefined, "v"),
+      e("hook", "os", "flow", undefined, undefined, "v"),
+      e("os", "world", "flow", undefined, undefined, "v"),
+      // The boundary is what holds the credentials out of reach — not the prompt.
+      e("os", "secrets", "link", undefined, undefined, "h"),
+      e("hook", "log", "link", "observes", undefined, "h"),
+    ],
+  },
 ];
 
 const byId = new Map(GRAPHS.map((g) => [g.id, g]));

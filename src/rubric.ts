@@ -219,6 +219,23 @@ function commandLines(doc: Doc): number[] {
 const VERIFY_RE =
   /\b(test|tests|typecheck|type-check|tsc|lint|linter|build|verify|verification|check|checks|ci|assert|golden|snapshot)\b/;
 
+/**
+ * Prose that tries to defend against prompt injection by instructing the model
+ * not to obey injected instructions. The sentence is fine to write; treating it
+ * as the control is the mistake the finding names — so this pairs with
+ * UNTRUSTED_NOUN_RE on the same line to keep it off ordinary "ignore the old
+ * instructions in X" prose.
+ */
+const INJECTION_DEFENSE_RE =
+  /\b(?:ignore|disregard|do not (?:follow|obey)|don'?t (?:follow|obey)|never (?:follow|obey))\b[^.\n]{0,60}\b(?:instructions?|commands?|directives?|prompts?)\b/i;
+
+const UNTRUSTED_NOUN_RE =
+  /\b(?:untrusted|external|fetched|web ?pages?|urls?|issues?|tickets?|emails?|comments?|tool (?:results?|output)|scraped|third[- ]party)\b/i;
+
+/** Ways an artifact can tell someone to turn the permission layer off. */
+const BYPASS_RE =
+  /--dangerously-skip-permissions|dangerouslyDisableSandbox|["']?bypassPermissions["']?/i;
+
 const SECRET_PATTERNS: Array<[RegExp, string]> = [
   [/sk-ant-[A-Za-z0-9_-]{8,}/, "an Anthropic API key"],
   [/\bAKIA[0-9A-Z]{12,}/, "an AWS access key id"],
@@ -254,7 +271,7 @@ const RULES: Rule[] = [
             excerpt: doc.lines[i].replace(m[0], "«redacted»").trim().slice(0, 96),
             detail: `This line looks like ${what}. Anything in this file is in the model's context on every single run, which means it is in every transcript, every log line, and every artifact anyone exports — including this review.`,
             fix: "Move it to an environment variable and reference the variable name here. Then rotate it: assume it is already compromised.",
-            ref: "production",
+            ref: "hardening",
           });
           break; // one finding per pattern is enough to make the point
         }
@@ -264,6 +281,51 @@ const RULES: Rule[] = [
   },
   // NOTE: the context-budget rule lives outside this array — it needs the
   // artifact kind, which Rule.run doesn't receive. See contextBudget() below.
+  {
+    id: "prompt-only-injection-defense",
+    kinds: ALL,
+    run(doc) {
+      const out: Finding[] = [];
+      for (let i = 0; i < doc.lines.length && out.length < 2; i++) {
+        const n = i + 1;
+        if (doc.inFence.has(n)) continue;
+        const raw = doc.lines[i];
+        // Both halves have to be on the same line, or "ignore the instructions
+        // in the legacy README" three paragraphs from the word "web" trips it.
+        if (!INJECTION_DEFENSE_RE.test(raw) || !UNTRUSTED_NOUN_RE.test(raw)) continue;
+        out.push({
+          rule: "prompt-only-injection-defense",
+          title: "Injection defence written as an instruction",
+          severity: "note",
+          line: n,
+          excerpt: clip(raw),
+          detail:
+            "This tells the model to disregard instructions arriving in untrusted content — which means it is a sentence competing with the attacker's sentence in the same undifferentiated token stream, and theirs is more recent and more specific. Worth keeping; not worth counting. The line is a mitigation, and a posture built out of mitigations has no floor.",
+          fix: "Keep the sentence, then put the actual control somewhere the model cannot argue with it: a deny rule on the tool the attack needs, a PreToolUse hook that sees the arguments, or an egress allowlist that turns the exfiltration into a failed lookup.",
+          ref: "hardening",
+        });
+      }
+      return out;
+    },
+  },
+  {
+    id: "permission-bypass",
+    kinds: ALL,
+    run(doc) {
+      const hits = allLines(doc, BYPASS_RE, 2, true);
+      return hits.map((h) => ({
+        rule: "permission-bypass",
+        title: "Permission bypass baked into the artifact",
+        severity: "warn" as Severity,
+        line: h.line,
+        excerpt: h.excerpt,
+        detail:
+          "This file tells whoever reads it — a person or the agent — to run with the permission layer switched off. Skipping permissions also skips protected-path checks, so the files an attacker most wants to edit stop being special at the same moment. Written down in a shared artifact, it becomes the default everyone copies, including into the deployments where nobody is watching.",
+        fix: "Scope it to an environment that can afford it: a container holding no credentials and nothing you would miss. If the goal was fewer prompts rather than fewer boundaries, reach for the sandbox with an egress allowlist, or an explicit allow list for the commands that keep interrupting.",
+        ref: "hardening",
+      }));
+    },
+  },
   {
     id: "vague-quality-words",
     kinds: ALL,

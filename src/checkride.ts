@@ -19,7 +19,7 @@ import type { QuizQuestion } from "./quiz";
 import { logActivity } from "./activity";
 
 const WINGS_KEY = "agentic-guide-wings-v1";
-// One question per section is the floor (12 sections as of L8), so the exam
+// One question per section is the floor (13 sections as of L9), so the exam
 // size has to stay above the section count for the random fill — and the
 // variety it buys — to mean anything.
 const EXAM_SIZE = 15;
