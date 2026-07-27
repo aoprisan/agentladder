@@ -652,6 +652,134 @@ export const questionBank: QuizQuestion[] = [
       "Fan-out multiplies trust boundaries; every worker is a new one. The orchestrator holds the write permissions the worker did not, which is exactly why a worker's report has to be read as a claim from elsewhere rather than as an order.",
   },
 
+  // L9 — hardening in practice ----------------------------------------------
+  {
+    id: "hardening-1",
+    sectionId: "hardening",
+    prompt: "What separates a <em>control</em> from a <em>mitigation</em> in this section's terms?",
+    options: [
+      "A control is documented; a mitigation is informal",
+      "A control is enforced by something that is not the model; a mitigation only raises the cost of an attack",
+      "A control is free; a mitigation costs friction",
+      "A control blocks; a mitigation detects",
+    ],
+    answer: 1,
+    explain:
+      "If the mechanism is a sentence in a prompt, it raises the attacker's cost. If it is a permission rule, a hook process, or a kernel boundary, it bounds the attack. Both are worth having — only one is worth counting.",
+  },
+  {
+    id: "hardening-2",
+    sectionId: "hardening",
+    prompt: "You commit a strict <code>permissions.deny</code> list in the project's <code>.claude/settings.json</code>. What have you actually guaranteed?",
+    options: [
+      "Nothing beyond a floor — permission rules merge across scopes, so user and local settings can still widen the surface unless managed settings lock them",
+      "That no developer can use any tool outside the allow list",
+      "That the rules override the user's own settings file",
+      "That the rules apply only in CI",
+    ],
+    answer: 0,
+    explain:
+      "Rules merge rather than override, and a project file cannot remove what a user or local file adds. Org policy is advisory until <code>allowManagedPermissionRulesOnly</code> is set in managed settings, at which point only managed rules are honoured.",
+  },
+  {
+    id: "hardening-3",
+    sectionId: "hardening",
+    prompt: "Your <code>PreToolUse</code> hook crashes on the CI image because <code>jq</code> isn't installed. What happens to the tool calls it was supposed to guard?",
+    options: [
+      "They are blocked — a failed hook fails closed",
+      "They are queued until a human approves them",
+      "They proceed through the normal permission flow; a hook that reports no decision has not denied anything",
+      "The session aborts with a hook error",
+    ],
+    answer: 2,
+    explain:
+      "Exit 0 with no output means \"no decision\", which is the right default and also means a broken hook fails open quietly. Exit 2 is what blocks, feeding stderr back to the model. Test the deny path in the environment the agent actually runs in.",
+  },
+  {
+    id: "hardening-4",
+    sectionId: "hardening",
+    prompt: "Why is the OS sandbox a different kind of control from a permission rule?",
+    options: [
+      "It is faster to evaluate",
+      "It covers every tool, where permission rules only cover Bash",
+      "It is enforced on the running process and its children, so it holds regardless of what the model chose to run",
+      "It cannot be configured, so nobody can weaken it",
+    ],
+    answer: 2,
+    explain:
+      "Permission rules are a decision about a command string before it runs. The sandbox is a kernel boundary on the process, so it holds even when an allowed command turns out to do more than its name suggested. The scope is the reverse of option two: the sandbox covers Bash subprocesses, while permission rules apply to every tool.",
+  },
+  {
+    id: "hardening-5",
+    sectionId: "hardening",
+    prompt: "The sandbox is enabled with default filesystem settings. Can a sandboxed command read <code>~/.ssh</code>?",
+    options: [
+      "No — the sandbox confines reads to the working directory",
+      "Yes — writes are confined by default but reads cover the whole machine, so credential paths need an explicit deny",
+      "No — credential paths are on a built-in deny list",
+      "Only if the agent asks for approval first",
+    ],
+    answer: 1,
+    explain:
+      "Default writes are the working directory plus the session temp directory; default reads are the whole computer, <code>~/.ssh</code> and <code>~/.aws/credentials</code> included. There is no built-in credential deny list — <code>sandbox.credentials</code> or <code>filesystem.denyRead</code> is what makes the workspace secret-free.",
+  },
+  {
+    id: "hardening-6",
+    sectionId: "hardening",
+    prompt: "Why is <code>github.com</code> a poor entry on an egress allowlist?",
+    options: [
+      "It resolves to too many IP addresses to filter reliably",
+      "It is a wildcard, which the proxy rejects",
+      "It authorises gists, issue comments and commits — a full exfiltration channel, allowlisted",
+      "It forces the proxy to terminate TLS",
+    ],
+    answer: 2,
+    explain:
+      "An allowlist is only as narrow as its widest entry. The built-in proxy decides from the client-supplied hostname without terminating TLS by default, so it filters names rather than traffic. Name specific hosts, and terminate TLS at a proxy you run if the threat model needs content filtering.",
+  },
+  {
+    id: "hardening-7",
+    sectionId: "hardening",
+    prompt: "Which control silently stops existing when you move an agent from a laptop to <code>claude -p</code> in CI?",
+    options: [
+      "The egress allowlist",
+      "Human approval before irreversible acts",
+      "Deny-by-default tool permissions",
+      "Transcript logging",
+    ],
+    answer: 1,
+    explain:
+      "No TTY means no approval prompt, so the most expensive control in the kit becomes a no-op — and nothing announces it. Trust verification for new codebases and MCP servers is disabled under <code>-p</code> for the same reason. For unattended deployments, only count controls that need nobody present.",
+  },
+  {
+    id: "hardening-8",
+    sectionId: "hardening",
+    prompt: "Detection fires on a run that fetched an attacker-controlled page. What comes first in the response?",
+    options: [
+      "Reproduce the injection to confirm it was real",
+      "Rotate every credential the agent could reach",
+      "Patch the route the attacker used",
+      "Restore the workspace from a clean checkout",
+    ],
+    answer: 1,
+    explain:
+      "Anything the agent could read is compromised until proven otherwise, and proving it takes longer than rotating. Then scope from the transcript, then assume persistence — grep memory files, skills, hooks and settings — and only then fix the route, checking the second route to the same outcome.",
+  },
+  {
+    id: "hardening-9",
+    sectionId: "hardening",
+    prompt: "Installing a new MCP server is best understood as…",
+    options: [
+      "adding a dependency, reviewed like any other package",
+      "a write to your system prompt on someone else's release schedule",
+      "a permission grant that the allowlist already covers",
+      "a context cost with no security implication",
+    ],
+    answer: 1,
+    explain:
+      "Tool descriptions load at startup and the model reads them as instructions, so an integration bump is a prompt change. Anthropic reviews connectors against listing criteria before directory listing but does not security-audit MCP servers — pin versions and diff the descriptions on update.",
+  },
+
   // REF — sources -----------------------------------------------------------
   {
     id: "sources-1",

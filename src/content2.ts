@@ -261,6 +261,7 @@ for await (const msg of query({
 <li><strong>Prompt injection</strong> is the standing threat for any agent that reads untrusted content (web pages, issues, emails): treat fetched content as data, gate side-effecting tools behind allowlists, hooks, or human approval.</li>
 <li>At team scale, centralize policy (what agents can reach) rather than trusting per-developer local settings.</li>
 </ul>
+<p>That is the summary; L8 is the threat model behind it and L9 is the configuration that implements it.</p>
 
 <h3>Evaluation and observability</h3>
 <ul>
@@ -332,6 +333,7 @@ for await (const msg of query({
 
 <h3>A posture, not a checklist</h3>
 <p>Security spend competes with the thing you were trying to build, and the honest currency is friction rather than money. Every control costs somebody's afternoon, and a control people have switched off is not a control. So the work is to pick the <em>fewest</em> controls that cut the most chains for this deployment — which means writing down the threat list first, and knowing which link each control cuts.</p>
+<p>Which controls, and how they are actually wired, is L9 — including the trap in each layer that makes one look present when it isn't.</p>
 <p>The range (in the bar above) is where that gets practised: a fixed friction budget, a real threat list per deployment, and a scored guess — before the reveal — about which attacks your own posture actually holds. The gap between how good your defences are and how well you understand them is the interesting number, because it predicts what you will remove the first week it inconveniences someone.</p>
 `,
     docs: [
@@ -340,6 +342,151 @@ for await (const msg of query({
       { label: "Hooks reference", url: "https://code.claude.com/docs/en/hooks" },
       { label: "MCP — connecting external tools", url: "https://code.claude.com/docs/en/mcp" },
       { label: "Effective Harnesses for Long-Running Agents", url: "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents" },
+    ],
+  },
+  {
+    id: "hardening",
+    ordinal: "L9",
+    title: "Hardening in practice",
+    tagline: "L8 is the threat model. This is the wiring — and the trap in each layer that makes a control look present when it isn't.",
+    body: `
+<p>L8 ends on a question: who can write into this agent's context, and what can it do once they have. Answering it is a configuration exercise, and this section is the configuration — layer by layer, with the failure mode of each one named, because the way these deployments actually go wrong is not a missing control. It is a control that is present, configured, and doing nothing.</p>
+
+<p>Two claims hold the rest together.</p>
+<ol>
+<li><strong>Every control worth counting is enforced by something that is not the model.</strong> If the mechanism is a sentence in a prompt, it is a mitigation — it raises the cost of an attack. If the mechanism is a permission rule, a hook process, or a kernel boundary, it is a control — it bounds one. Both are worth having; only one of them is worth writing on the board.</li>
+<li><strong>The defaults are a starting point, not a posture.</strong> The shipped defaults are good and they are tuned for a specific situation: a developer at a keyboard, able to read a prompt and say no. Several of them evaluate to nothing the moment the same agent runs unattended — and nothing announces that.</li>
+</ol>
+
+<div data-graph="defense"></div>
+
+<h3>The layers, and what each one cannot see</h3>
+<table>
+<thead><tr><th>Layer</th><th>Enforced by</th><th>Sees</th><th>Blind to</th></tr></thead>
+<tbody>
+<tr><td>Permission rules</td><td>The harness, before the call runs</td><td>Tool name and argument pattern</td><td>Intent, and any argument shape you didn't anticipate</td></tr>
+<tr><td><code>PreToolUse</code> hooks</td><td>Your code, before the call runs</td><td>The full arguments, and anything else your script can reach</td><td>Whether a legitimate-looking action was requested by the wrong party</td></tr>
+<tr><td>OS sandbox</td><td>The kernel, on the running process</td><td>Every file and socket the process and its children touch</td><td>Anything the agent does through a tool that isn't Bash</td></tr>
+<tr><td>Identity scope</td><td>The system on the other end</td><td>What this principal is entitled to do</td><td>Misuse that stays inside the grant</td></tr>
+<tr><td>Transcripts</td><td>Nothing — it is a record</td><td>Everything, afterwards</td><td>The present tense</td></tr>
+</tbody>
+</table>
+<p>Read down the "blind to" column and the case for layering makes itself: each layer's blind spot is the next layer's field of view, and no single one of them is a place to stand.</p>
+
+<h3>1 · Permission rules — the floor, and they merge</h3>
+<p>Permissions are three arrays of <code>Tool(pattern)</code> rules — <code>allow</code>, <code>ask</code>, <code>deny</code> — resolved across managed, command-line, local, project, and user scopes. <code>deny</code> wins over <code>allow</code> wherever they overlap, so the useful rules to write first are the negative ones.</p>
+<pre><code>{
+  "permissions": {
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Bash(curl *)",
+      "Bash(git push *)"
+    ],
+    "ask": ["WebFetch"],
+    "allow": ["Bash(npm run test *)", "Bash(npm run lint)"]
+  }
+}</code></pre>
+<p class="callout"><strong>The trap: permission rules <em>merge</em> across scopes rather than override.</strong> A project's <code>.claude/settings.json</code> can add rules; it cannot remove the ones a developer set in <code>~/.claude/settings.json</code>, and a developer's local file can widen what the project committed. So a rule set checked into the repo is a floor for the team, not a ceiling — the org policy you thought you shipped is advisory until <code>allowManagedPermissionRulesOnly</code> is set in managed settings, at which point only managed rules are honoured at all. If your security review looked at the committed file and stopped there, it reviewed a suggestion.</p>
+
+<h3>2 · Hooks — the layer that reads the arguments</h3>
+<p>A permission rule matches a pattern. A <code>PreToolUse</code> hook is your own process, handed the tool call as JSON on stdin, free to inspect whatever it likes and refuse. That is the layer that catches the argument the allowlist could not have anticipated — because it sees the arguments, not just the tool name (L4.3).</p>
+<p>Two ways to refuse. Exit <strong>2</strong> blocks the call and feeds stderr back to the model as an error, which is the terse version. Or exit 0 having printed a decision, which is the version that can explain itself and can also <em>rewrite</em> the call rather than kill it:</p>
+<pre><code>{
+  "hookSpecificOutput": {
+    "hookEventName": "PreToolUse",
+    "permissionDecision": "deny",
+    "permissionDecisionReason": "Outbound host not on the allowlist"
+  }
+}</code></pre>
+<p><code>permissionDecision</code> takes <code>allow</code>, <code>deny</code>, <code>ask</code> or <code>defer</code>, and <code>updatedInput</code> lets a hook hand back modified arguments — redaction instead of refusal, which is often the control people actually wanted.</p>
+<p class="callout"><strong>The trap: silence is not approval, and it is not denial either.</strong> Exit 0 with no output means the hook has <em>no decision</em>, and the call carries on through the normal permission flow. That is the right default, and it means a hook that crashes — <code>jq</code> missing on the CI image, a bad path, a syntax error in a script nobody runs locally — fails <em>open</em> and reports nothing you will notice. Test the deny path in the environment the agent actually runs in, and assert on it the way you would assert on a test, or you are counting a control that exits non-zero into the void.</p>
+
+<h3>3 · The sandbox — the only layer the model cannot talk its way past</h3>
+<p>Permission rules and hooks are decisions made about a command string <em>before</em> it runs. The sandbox is an OS boundary — Seatbelt on macOS, bubblewrap on Linux and WSL2 — imposed on the running process and everything it spawns. The distinction is the whole value: it holds regardless of what the model chose to run, and regardless of whether an allowed command turned out to do more than its name suggested.</p>
+<p>Two independent layers, and you want both:</p>
+<ul>
+<li><strong>Filesystem.</strong> Writes are confined to the working directory and the session temp directory by default. <strong>Reads are not</strong> — the default read policy covers the whole machine, <code>~/.ssh</code> and <code>~/.aws/credentials</code> included. A sandbox is not a secret-free workspace until you say so, which is what <code>sandbox.credentials</code> and <code>filesystem.denyRead</code> are for.</li>
+<li><strong>Network.</strong> No domains are pre-allowed; you name them in <code>network.allowedDomains</code> or approve them as they come up. This is the egress cut, and it is the cheapest link in the trifecta to break.</li>
+</ul>
+<pre><code>{
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "network": { "allowedDomains": ["registry.npmjs.org", "api.github.com"] },
+    "credentials": {
+      "files": [
+        { "path": "~/.aws/credentials", "mode": "deny" },
+        { "path": "~/.ssh", "mode": "deny" }
+      ],
+      "envVars": [{ "name": "GITHUB_TOKEN", "mode": "deny" }]
+    }
+  }
+}</code></pre>
+<p><code>failIfUnavailable</code> is the line that matters most in that block and the one everyone omits: without it, a missing dependency on one machine downgrades to a warning and an unsandboxed run. A security gate that degrades to "off" with a log line is a gate you cannot reason about.</p>
+<p class="callout"><strong>The trap: an allowlist is only as narrow as its widest entry.</strong> The built-in proxy decides from the client-supplied hostname and does not terminate TLS by default, so it is filtering names, not traffic. <code>github.com</code> on that list authorises a gist, an issue comment, and a commit to any repository the token can reach — a full exfiltration channel, allowlisted. Name the specific hosts, and if the threat model needs more than name filtering, terminate TLS at a proxy you run.</p>
+<p>Note the scope, too: the sandbox isolates <strong>Bash subprocesses</strong>. <code>Read</code>, <code>Edit</code> and <code>Write</code> go through the permission system instead, and subagents inherit the parent session's configuration rather than getting boundaries of their own.</p>
+
+<h3>4 · Credentials — make the workspace boring to steal from</h3>
+<ul>
+<li><strong>The agent gets its own identity</strong>, with the narrowest grant that lets the task complete and a short lifetime. An agent is a deputy holding your authority (L8); the fix for a confused deputy is not a smarter deputy, it is a smaller badge.</li>
+<li><strong>Deny what it doesn't need, mask what it does.</strong> A <code>deny</code> entry unsets the variable, which also breaks the tool that needed it. <code>mask</code> hands the sandboxed command a per-session sentinel and substitutes the real value at the proxy on the way out to named hosts — so <code>gh</code> keeps working and neither the transcript nor the log ever holds the credential. Masking requires the proxy to terminate TLS, and fails closed if it can't.</li>
+<li><strong>Assume the transcript is a disclosure surface.</strong> Anything reaching the context is in every log, every exported review, every crash report. That is also why an incident starts with rotation rather than with analysis.</li>
+</ul>
+
+<h3>5 · Integrations are writes to your system prompt</h3>
+<p>Tool descriptions load at startup and the model reads them as instructions. So installing an MCP server is a write to your system prompt on someone else's release schedule (L8), and it is worth being precise about what review does and doesn't cover: Anthropic reviews connectors against listing criteria before they appear in the directory, and does not security-audit MCP servers. Pin versions, diff tool descriptions on update, and treat an integration bump as a prompt change, because it is one.</p>
+<p>The pleasant part: the security argument and the context argument point the same way for once. Fewer servers means a smaller attack surface <em>and</em> fewer tokens burned on every turn (L2, L3). Reach for that alignment when you are arguing for removing an integration — the cost case usually lands where the risk case doesn't.</p>
+
+<h3>6 · Memory is executable</h3>
+<p><code>CLAUDE.md</code>, <code>.claude/rules/</code>, skills, hooks, <code>.mcp.json</code>, <code>settings.json</code> — to the agent these are not configuration, they are standing instructions, and an injection that reaches one has been promoted from an incident to a policy change (L8). Review them as source: owners files on those paths, branch protection, and an actual reader on the diff. A <code>ConfigChange</code> hook can audit or block settings edits mid-session, and <code>InstructionsLoaded</code> fires when a memory file is read, which is the hook you want if you have ever wondered what your agent is actually loading.</p>
+<p>The sandbox helps here — it denies writes to <code>settings.json</code> at every scope, so a sandboxed command cannot edit its own policy. That protection lives in the filesystem layer, and so it disappears with it if anyone turns filesystem isolation off to make a stubborn tool work.</p>
+
+<h3>7 · Headless and CI — where the posture is actually tested</h3>
+<p>Everything above assumes a person is available. Under <code>claude -p</code> in CI, no one is:</p>
+<ul>
+<li><strong>Human approval becomes a no-op.</strong> There is no TTY, so the strongest and most expensive control in the kit silently isn't there. If your threat model leaned on it, the CI deployment has a hole exactly the shape of the thing you were most confident about.</li>
+<li><strong>Trust verification is disabled under <code>-p</code>.</strong> The first-run prompt for a new codebase or a new MCP server is an interactive control, and non-interactive means it doesn't fire.</li>
+<li><strong>The job's token is the agent's authority.</strong> A workflow with broad write scope hands that scope to whatever the agent decides to do — including whatever a pull request's description talked it into. Scope the job, not just the agent.</li>
+<li><strong><code>--dangerously-skip-permissions</code> belongs in a container holding nothing you would miss.</strong> It also skips protected-path checks, and it is refused outright when running as root — which is a hint about the intended blast radius, not an obstacle to work around.</li>
+</ul>
+<p>The rule that survives: for an unattended deployment, only count controls that need no one present. Everything else is a control for a different deployment.</p>
+
+<h3>8 · Detection, and the incident you will actually have</h3>
+<p>Detection blocks nothing and is still worth building, because it is what makes an incident bounded instead of open-ended. Alert on shapes, not signatures: first contact with a new host, credential-shaped strings in outbound payloads, a burst of writes, a tool call sequence that no legitimate run produces.</p>
+<p>When it fires, the order matters more than the speed:</p>
+<ol>
+<li><strong>Rotate first.</strong> Anything the agent could read is compromised until proven otherwise, and proving it takes longer than rotating.</li>
+<li><strong>Scope from the transcript</strong> — which is why the transcript needs to be complete and retained. Every tool call, arguments included.</li>
+<li><strong>Assume persistence.</strong> Grep the memory files, skills, hooks, MCP config and settings for anything the run touched. This is the step people skip, and it is the one that decides whether the incident is over or dormant.</li>
+<li><strong>Then</strong> fix the route — and check the other route to the same outcome, because the interesting attacks have two.</li>
+</ol>
+
+<h3>A starter posture, by deployment</h3>
+<p>Friction is the real currency (L8), so this is what to buy first when you cannot buy everything:</p>
+<table>
+<thead><tr><th>Deployment</th><th>Buy first</th><th>Because</th></tr></thead>
+<tbody>
+<tr><td><strong>Developer laptop</strong></td><td>Sandbox on with credential denies; deny rules for secret paths; memory files in review</td><td>The machine is full of things worth stealing and the human gate is genuinely available, so spend on blast radius rather than gates.</td></tr>
+<tr><td><strong>CI / headless</strong></td><td>Egress allowlist; scoped job token; protected paths; no approval-dependent controls counted</td><td>Nobody is there. Every gate that needs a person is decorative here.</td></tr>
+<tr><td><strong>Nightly batch</strong></td><td>Egress allowlist; secret-free workspace; rate and anomaly limits</td><td>Nothing is time-critical, so approval queues are affordable — but scale is the threat, and an agent does not get suspicious on the two-hundredth request.</td></tr>
+<tr><td><strong>Customer-facing</strong></td><td>Content-is-data framing; deny-by-default tools; scoped identity; human approval on the irreversible</td><td>Untrusted input is not an edge case here, it is the input. Assume every message is hostile and price the friction accordingly.</td></tr>
+</tbody>
+</table>
+<p class="callout"><strong>Where to practise this:</strong> the range (in the bar above) runs exactly these trade-offs — a fixed friction budget, a real threat list per deployment, and a scored prediction, made <em>before</em> the reveal, about which attacks your own posture holds. This section tells you what each control is; the range tells you whether you know what yours are doing.</p>
+<p>One caveat that ages faster than the rest of this guide: the setting names and hook fields above are version-specific. Check them against the settings and hooks references before you rely on the exact spelling — the shape of the argument outlives the schema.</p>
+`,
+    docs: [
+      { label: "Security (official docs)", url: "https://code.claude.com/docs/en/security" },
+      { label: "Permissions", url: "https://code.claude.com/docs/en/permissions" },
+      { label: "Settings reference (scopes & precedence)", url: "https://code.claude.com/docs/en/settings" },
+      { label: "Sandboxing — filesystem & network isolation", url: "https://code.claude.com/docs/en/sandboxing" },
+      { label: "Sandbox environments — choosing an isolation boundary", url: "https://code.claude.com/docs/en/sandbox-environments" },
+      { label: "Hooks reference", url: "https://code.claude.com/docs/en/hooks" },
+      { label: "Development containers", url: "https://code.claude.com/docs/en/devcontainer" },
+      { label: "Monitoring usage (OpenTelemetry)", url: "https://code.claude.com/docs/en/monitoring-usage" },
     ],
   },
   {
