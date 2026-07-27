@@ -21,6 +21,7 @@ import {
   type Review,
 } from "./rubric";
 import { logActivity } from "./activity";
+import { estimateTokens } from "./tokens";
 
 const BENCH_KEY = "agentic-guide-bench-v1";
 const HISTORY_CAP = 12;
@@ -206,7 +207,7 @@ export function initBench(
 
       <textarea class="bn-editor" spellcheck="false" placeholder="Paste it here…" aria-label="Artifact source">${esc(source)}</textarea>
       <div class="bn-bar">
-        <span class="bn-meta">${source.length.toLocaleString()} chars · ~${Math.round(source.length / 4).toLocaleString()} tokens</span>
+        <span class="bn-meta">${source.length.toLocaleString()} chars · ~${estimateTokens(source).toLocaleString()} tokens</span>
         <div class="drill-actions">
           <button class="drill-btn" data-act="sample" type="button">load a worked example</button>
           <button class="drill-btn" data-act="clear" type="button">clear</button>
@@ -222,7 +223,7 @@ export function initBench(
       source = ed.value;
       const meta = card.querySelector<HTMLElement>(".bn-meta");
       if (meta) {
-        meta.textContent = `${source.length.toLocaleString()} chars · ~${Math.round(source.length / 4).toLocaleString()} tokens`;
+        meta.textContent = `${source.length.toLocaleString()} chars · ~${estimateTokens(source).toLocaleString()} tokens`;
       }
     });
     if (preserve !== null) {

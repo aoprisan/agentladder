@@ -34,8 +34,8 @@ Everything renders from typed data. The moving parts:
 
 - **`src/content.ts`** — defines the `Section` and `DocLink` interfaces, the
   `meta` object (title/subtitle/updated/disclaimer), and `sections` L0–L3.
-- **`src/content2.ts`** — `sections2`: the toolbox, L4–L7, and sources. Imports
-  the `Section` type from `content.ts`.
+- **`src/content2.ts`** — `sections2`: prompt writing (PW), the toolbox, L4–L7,
+  and sources. Imports the `Section` type from `content.ts`.
 - **`src/main.ts`** — concatenates `[...part1, ...sections2]` into one array,
   then renders the whole page by string-templating `innerHTML`. It owns ledger
   state, the progress gauge, an `IntersectionObserver` scrollspy that
@@ -150,10 +150,28 @@ Everything renders from typed data. The moving parts:
   and a 14-day review-due forecast. Read-only over the activity log, the SRS
   store (via `readSrsSnapshot()` from `drill.ts`), the black-box store, and
   the ledger.
+- **`src/tokens.ts`** — the token estimator: pure logic, no DOM, no tokenizer
+  table. Classifies characters (letters / digits / CJK / punctuation /
+  layout) and weights each class, which is enough to show the *shape* of a
+  prompt's cost without breaking the zero-dependency, works-offline contract.
+  It is a heuristic (±10–20%) and every surface that renders it says so and
+  points at `count_tokens`. Also exports `FORMAT_SAMPLES` — one instruction
+  written four ways (plain / Markdown / XML / JSON), which is what makes the
+  format argument in PW a measurement rather than an assertion. `rubric.ts`
+  and `bench.ts` share `estimateTokens` so the bench and the meter never
+  disagree about the same file; the bench's `contextBudget` thresholds are
+  calibrated against it.
+- **`src/tokenmeter.ts`** — the inline widget in PW, mounted by `main.ts` into
+  a `<div data-widget="token-meter">`. Same privacy contract as the bench:
+  what you paste is never persisted, never put in the URL, never leaves the
+  tab — and unlike the bench it keeps no scoreboard either.
 - **`src/share.ts`** — team share-links: the ledger's done-bits packed into a
-  hex payload in the URL hash (`#share=1.<hex>`, bit order = sections-array
-  order, so **don't reorder sections** without bumping the payload version).
-  `main.ts` shows a merge/replace/ignore banner when a share hash is present.
+  hex payload in the URL hash (`#share=2.<hex>`, bit order = sections-array
+  order, so **don't reorder or insert sections** without bumping the payload
+  version). V1 links are still decoded against the frozen `V1_ORDER` list —
+  when you bump the version, freeze the old order the same way rather than
+  letting old links mark the wrong sections done. `main.ts` shows a
+  merge/replace/ignore banner when a share hash is present.
 
 A `Section` is `{ id, ordinal, title, tagline, body, docs }`. `body` is
 **trusted HTML authored in this repo** and injected via `innerHTML` — keep it
@@ -163,10 +181,14 @@ that way; do not feed user or fetched input through it. `docs` renders as an
 **To add or edit a section**, add/modify a `Section` object in `content.ts`
 (L0–L3) or `content2.ts` (everything else). The nav rail, progress gauge, and
 scrollspy all derive from the sections array automatically — no wiring needed.
-`ordinal` is the label shown ("L0"…"L7", "TB", "REF"); `id` is the anchor and
-the ledger key. To drop a topology diagram into a body, add an empty
-`<div data-graph="<graph id>"></div>` — `main.ts` fills it from
-`agentgraph.ts`; add the graph there first if it doesn't exist yet.
+`ordinal` is the label shown ("L0"…"L7", "PW", "TB", "REF"); `id` is the
+anchor and the ledger key. To drop a topology diagram into a body, add an
+empty `<div data-graph="<graph id>"></div>` — `main.ts` fills it from
+`agentgraph.ts`; add the graph there first if it doesn't exist yet. Interactive
+widgets work the same way: `<div data-widget="token-meter"></div>` is mounted
+by `hydrateWidgets()` in `main.ts`. Both hooks keep the markup out of the
+content files and out of the palette's search index (which reads the body
+strings, so an empty div contributes nothing).
 
 The ledger persists to `localStorage` under `agentic-guide-ledger-v1`
 (`STORE_KEY` in `main.ts`); drill scheduling under `agentic-guide-srs-v1`
@@ -180,7 +202,7 @@ content-free scoreboard under `agentic-guide-bench-v1` (`BENCH_KEY` in
 `bench.ts`). Changing any key resets everyone's saved state for that feature
 — they are deliberately independent stores.
 
-Three URL-hash payloads coexist and are mutually exclusive: `#share=1.…`
+Three URL-hash payloads coexist and are mutually exclusive: `#share=2.…`
 (ledger bits, `share.ts`), `#arch=1.…` (architect answers, `architect.ts`),
 `#wings=1.…` (checkride certificate, `checkride.ts`). All are read once at
 module init in `main.ts`; section bodies are trusted HTML but hash-sourced

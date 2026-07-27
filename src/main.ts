@@ -13,6 +13,7 @@ import { readArchHash } from "./architect";
 import { initCheckride, readWingsHash } from "./checkride";
 import { logActivity } from "./activity";
 import { graphById, renderFigure } from "./agentgraph";
+import { focusTokenMeter, mountTokenMeter } from "./tokenmeter";
 import { buildShareUrl, readShareHash, clearShareHash } from "./share";
 
 const sections: Section[] = [...part1, ...sections2];
@@ -189,6 +190,7 @@ function render(): void {
   });
 
   hydrateGraphs();
+  hydrateWidgets();
   syncState();
   observeSections();
 }
@@ -201,6 +203,15 @@ function hydrateGraphs(): void {
   app!.querySelectorAll<HTMLElement>("[data-graph]").forEach((slot) => {
     const graph = graphById(slot.dataset.graph!);
     if (graph) slot.innerHTML = renderFigure(graph);
+  });
+}
+
+// Interactive widgets get the same treatment as the diagrams: the body marks
+// the slot with an empty `<div data-widget="…">` and the markup is built here,
+// which keeps it out of the content files and out of the palette's index.
+function hydrateWidgets(): void {
+  app!.querySelectorAll<HTMLElement>("[data-widget]").forEach((slot) => {
+    if (slot.dataset.widget === "token-meter") mountTokenMeter(slot);
   });
 }
 
@@ -411,6 +422,14 @@ const palette = initPalette(sections, [
     label: "Review an artifact on the bench",
     hint: "your CLAUDE.md, prompt, or tool description — line-anchored findings, stays on this device",
     run: () => bench.open(),
+  },
+  {
+    label: "Estimate a prompt's token cost",
+    hint: "paste a prompt or CLAUDE.md — composition, window share, format comparison",
+    run: () => {
+      jumpTo("prompt-formats");
+      focusTokenMeter();
+    },
   },
   {
     label: "Open the pattern lab",

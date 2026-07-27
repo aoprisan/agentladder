@@ -22,6 +22,8 @@
 // re-check the rules pointed at it.
 // ---------------------------------------------------------------------------
 
+import { estimateTokens } from "./tokens";
+
 export type ArtifactKind = "claude-md" | "prompt" | "tool";
 
 export type Severity = "block" | "warn" | "note";
@@ -128,10 +130,10 @@ function parse(text: string): Doc {
     unlabeledFences,
     headings,
     inFence,
-    // The usual rough conversion. Precision doesn't matter here — the point is
-    // to make an invisible cost visible, and 4 chars/token is close enough
-    // that nobody argues about the second digit.
-    approxTokens: Math.round(text.length / 4),
+    // Same estimator the token meter uses (PW), so the bench and the meter
+    // never disagree about the same file. Precision isn't the point — making
+    // an invisible recurring cost visible is.
+    approxTokens: estimateTokens(text),
   };
 }
 

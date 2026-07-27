@@ -228,6 +228,64 @@ export const questionBank: QuizQuestion[] = [
       "Meaningful errors are the agent's feedback channel. A precise, actionable error turns a dead end into a recoverable step.",
   },
 
+  // PW — prompt formats & token cost ----------------------------------------
+  {
+    id: "prompt-formats-1",
+    sectionId: "prompt-formats",
+    prompt: "What are the three jobs that justify adding structure to a prompt?",
+    options: [
+      "Compressing, encrypting, and versioning the prompt",
+      "Delimiting, addressing, and signalling shape",
+      "Escaping, validating, and schema-checking the input",
+      "Highlighting, summarizing, and paraphrasing the instruction",
+    ],
+    answer: 1,
+    explain:
+      "Delimiting (where the pasted data ends and your instruction begins), addressing (naming a region so you can refer to it), and signalling shape (ordered list, table, literal block). Structure doing none of the three is decoration you rent by the turn.",
+  },
+  {
+    id: "prompt-formats-2",
+    sectionId: "prompt-formats",
+    prompt: "You want a machine-readable object back from the model. What's the recommended way to get it?",
+    options: [
+      "Ask for JSON in the prompt and add a JSON example",
+      "Constrain it — structured outputs (<code>output_config.format</code>) or a tool's input schema",
+      "Wrap the request in <code>&lt;json&gt;</code> tags",
+      "Prefill the assistant turn with an opening brace",
+    ],
+    answer: 1,
+    explain:
+      "JSON is a fine <em>output</em> format and a poor <em>input</em> one. When the shape matters, use the mechanisms built to constrain it rather than asking politely in prose — and note that assistant prefill is rejected on current models.",
+  },
+  {
+    id: "prompt-formats-3",
+    sectionId: "prompt-formats",
+    prompt: "Your prompt-length estimate has to be right. Where does the exact number come from?",
+    options: [
+      "chars ÷ 4",
+      "An OpenAI tokenizer such as tiktoken",
+      "<code>POST /v1/messages/count_tokens</code> for the model you're calling",
+      "The word count times 1.3",
+    ],
+    answer: 2,
+    explain:
+      "Tokenization is model-specific — Claude generations differ from each other, and other vendors' tokenizers are simply wrong here (an OpenAI tokenizer undercounts Claude by roughly 15–20% on prose, more on code). Estimates are for arguing about format; <code>count_tokens</code> is for deciding.",
+  },
+  {
+    id: "prompt-formats-4",
+    sectionId: "prompt-formats",
+    prompt: "Which prompt is worth optimizing for length first?",
+    options: [
+      "A one-off analysis request, because it's the longest",
+      "Standing context — a CLAUDE.md or tool description, paid on every turn",
+      "Whichever contains the most examples",
+      "The final message, because it's closest to the answer",
+    ],
+    answer: 1,
+    explain:
+      "A message sent once at 3,000 tokens costs 3,000 tokens. A CLAUDE.md or tool description at 3,000 tokens costs that on every turn of every session — which is why the bench flags length there and nowhere else.",
+  },
+
   // TB — toolbox ------------------------------------------------------------
   {
     id: "toolbox-1",

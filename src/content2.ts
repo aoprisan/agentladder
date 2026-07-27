@@ -2,6 +2,69 @@ import type { Section } from "./content";
 
 export const sections2: Section[] = [
   {
+    id: "prompt-formats",
+    ordinal: "PW",
+    title: "Writing the prompt — plain text, Markdown, XML, JSON",
+    tagline: "Format is a boundary-marking device with a token price. Here is both halves of the trade.",
+    body: `
+<p>A model does not see your headings. It sees a flat stream of tokens, and every character of format you add is part of that stream — read on every turn, competing for the same attention budget as the instruction itself (L2). So format earns its place by doing one of three jobs:</p>
+<ol>
+<li><strong>Delimiting</strong> — marking unambiguously where the pasted document ends and your instruction begins. This is the job that matters most and the one prose does worst.</li>
+<li><strong>Addressing</strong> — giving a region a name you can refer to later ("check the diff in <code>&lt;diff&gt;</code> against the rules in <code>&lt;rules&gt;</code>"). You cannot point at a paragraph; you can point at a tag.</li>
+<li><strong>Signalling shape</strong> — a numbered list reads as an ordered procedure, a table as a set of parallel cases, a fenced block as literal text not to be interpreted.</li>
+</ol>
+<p>Structure that does none of the three is decoration you rent by the turn.</p>
+
+<h3>The formats, and what each is actually for</h3>
+<table>
+<thead><tr><th>Format</th><th>Reach for it when</th><th>The cost</th></tr></thead>
+<tbody>
+<tr><td><strong>Plain prose</strong></td><td>The whole prompt is a few sentences and nothing is pasted in.</td><td>Nothing — but the moment you paste content into it, the model has to guess where your words stop and the data starts.</td></tr>
+<tr><td><strong>Markdown</strong></td><td>Instruction documents: <code>CLAUDE.md</code>, <code>SKILL.md</code>, system prompts, anything a human also maintains.</td><td>Almost free, and it is the native register of the material these models were trained on. Weak at nesting: a Markdown list inside a pasted Markdown document has no visible seam.</td></tr>
+<tr><td><strong>XML tags</strong></td><td>Long or mixed context — a document plus a spec plus examples — and anywhere you need to refer to a region by name. Anthropic's long-standing recommendation for Claude.</td><td>You pay for the tag twice, opening and closing. Worth it when there is something to delimit; pure overhead when there isn't.</td></tr>
+<tr><td><strong>JSON</strong></td><td><em>Output</em> a machine will consume — and even then, prefer the mechanisms built for it: structured outputs (<code>output_config.format</code>) or a tool's input schema, which constrain the shape instead of asking politely.</td><td>Expensive as <em>input</em>: braces, quotes, colons and commas are all tokens, and escaping makes any embedded code or prose harder for both of you to read.</td></tr>
+<tr><td><strong>HTML</strong></td><td>Essentially never, as something you author.</td><td>You mostly <em>receive</em> it — fetched pages, scraped docs. Tag soup is a large token multiplier carrying almost no signal; convert to Markdown or text before it enters the context, and treat the content as untrusted data either way (L7).</td></tr>
+<tr><td><strong>YAML / TOML</strong></td><td>Metadata and configuration — skill frontmatter, agent definitions.</td><td>Terse and readable, but whitespace-significant: a bad place to embed free-form text that might contain a colon.</td></tr>
+<tr><td><strong>CSV / TSV</strong></td><td>Tabular data, especially many rows.</td><td>Dramatically cheaper than the same rows as JSON objects — the field names are paid for once in the header instead of once per row.</td></tr>
+</tbody>
+</table>
+
+<h3>Rules that survive contact with a real prompt</h3>
+<ul>
+<li><strong>One structural language per prompt.</strong> Markdown nested inside XML nested inside JSON is three sets of delimiters for one job, and the model has to work out which layer a stray brace belongs to.</li>
+<li><strong>Name tags for what they contain</strong> — <code>&lt;transcript&gt;</code>, <code>&lt;style_guide&gt;</code>, <code>&lt;acceptance_criteria&gt;</code> — and reuse the same names in the instruction. A tag you never refer to is a comment.</li>
+<li><strong>Long input first, the question last.</strong> With a long document in context, put the document above the instructions and keep the actual ask at the end; Anthropic's long-context guidance is explicit about that ordering.</li>
+<li><strong>Examples are the highest-value tokens in the prompt.</strong> Two or three worked examples in the format you want back will beat a paragraph describing that format, every time. If you find yourself writing rules about output shape, you probably wanted an example — or a schema.</li>
+<li><strong>Data you delimit can contain your delimiter.</strong> Pasted content with a stray <code>&lt;/document&gt;</code> in it will close your tag early — and if that content came from the web or an issue tracker, that is a prompt-injection surface, not just a formatting bug (L7).</li>
+<li><strong>Reformatting is not free even when it's cheap.</strong> A prompt-cache hit is a byte-exact prefix match, so re-indenting or re-wrapping your standing context invalidates the cache for everything after the edit. Settle the format, then leave it alone.</li>
+</ul>
+
+<h3>What your prompt actually costs</h3>
+<p>Formatting arguments end quickly once both sides can see a number. Paste something real below — the meter also prices the <em>same</em> instruction in four formats, so the spread is measured rather than asserted.</p>
+<div data-widget="token-meter"></div>
+
+<h3>Getting the number you can act on</h3>
+<p>The meter above is a heuristic and says so. Real tokenization is model-specific — Claude generations do not agree with each other, and tokenizers from other vendors are simply wrong here (an OpenAI tokenizer undercounts Claude by roughly 15–20% on prose and considerably more on code). When the number is going to decide something, measure it:</p>
+<ul>
+<li><strong><code>POST /v1/messages/count_tokens</code></strong> — the exact count for a given model, request shape included. Pass the same model id you will call.</li>
+<li><strong><code>usage</code> on the response</strong> — what you were actually billed, broken out into fresh input, cache writes, and cache reads. If <code>cache_read_input_tokens</code> stays at zero across identical prefixes, something in your prompt is changing per request.</li>
+<li><strong><code>/context</code> in Claude Code</strong> — where the current window went: system prompt, tools, files, conversation.</li>
+</ul>
+<p class="callout"><strong>The habit worth keeping:</strong> optimize the standing context, not the one-off prompt. A message you send once at 3,000 tokens costs 3,000 tokens. A <code>CLAUDE.md</code> or tool description at 3,000 tokens costs that on every turn of every session, forever — which is why the bench flags length there and nowhere else.</p>
+`,
+    docs: [
+      { label: "Prompt engineering overview (Claude docs)", url: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" },
+      { label: "Use XML tags to structure your prompts", url: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/use-xml-tags" },
+      { label: "Be clear, direct, and detailed", url: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/be-clear-and-direct" },
+      { label: "Multishot prompting (examples)", url: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/multishot-prompting" },
+      { label: "Long context prompting tips", url: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/long-context-tips" },
+      { label: "System prompts", url: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/system-prompts" },
+      { label: "Token counting", url: "https://docs.claude.com/en/docs/build-with-claude/token-counting" },
+      { label: "Context windows", url: "https://docs.claude.com/en/docs/build-with-claude/context-windows" },
+      { label: "Structured outputs", url: "https://docs.claude.com/en/docs/build-with-claude/structured-outputs" },
+    ],
+  },
+  {
     id: "toolbox",
     ordinal: "TB",
     title: "The toolbox — what tools you can actually use",
