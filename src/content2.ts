@@ -287,6 +287,62 @@ for await (const msg of query({
     ],
   },
   {
+    id: "adversarial",
+    ordinal: "L8",
+    title: "The adversary — agents under attack",
+    tagline: "An agent that reads what strangers write is a machine that runs text from strangers.",
+    body: `
+<h3>The shape of the problem</h3>
+<p>Everything up to here optimises for capability: give the model the right context, the right tools, the right amount of rope. This section is about the same system read by someone who wants it to work <em>for them</em>.</p>
+<p>The uncomfortable property is structural, not a bug anyone can patch. A context window is one flat sequence of tokens. The operator's instructions, the repository's memory file, a tool description, a fetched web page, an issue filed by a stranger — by the time they reach the model they are the same kind of thing: text. The model is built to follow the most relevant instruction it can see, and it has no channel that tells it which sentences carry your authority.</p>
+<p>So the standing question for any agentic deployment is not "can it be jailbroken?" — nothing is broken. It is: <strong>who can write into this agent's context, and what can the agent do once they have?</strong></p>
+
+<div data-graph="trust"></div>
+
+<h3>The lethal trifecta</h3>
+<p>Three properties, each individually reasonable, become an exfiltration channel when they meet in one context:</p>
+<ol>
+<li><strong>Access to private data</strong> — source, customer records, credentials, anything the agent was given legitimately.</li>
+<li><strong>Exposure to untrusted content</strong> — a page, a ticket, an email, a tool result, a subagent's report.</li>
+<li><strong>A way to communicate outward</strong> — and this is broader than it sounds. A fetch is a channel. An image URL is a channel. Any tool argument that reaches a third party is a channel; the data leaves in the address and nothing errors.</li>
+</ol>
+<p>Any two are survivable. All three is a design decision, and the cheapest cut is usually the third: an egress allowlist turns an exfiltration into a failed DNS lookup.</p>
+
+<h3>Where the controls actually sit</h3>
+<p>Controls fall into five families, and mixing them is what makes a posture rather than a pile:</p>
+<ul>
+<li><strong>Provenance</strong> — mark untrusted material as material. Fetched content is wrapped and framed as data to reason about, never spliced in as instruction. A subagent's summary gets the same treatment: fan-out multiplies trust boundaries, and the orchestrator is the one holding the write permissions.</li>
+<li><strong>Action gates</strong> — deny-by-default tool permissions, <code>PreToolUse</code> hooks that see the arguments and can refuse, human approval on the irreversible, protected paths for CI config and memory files.</li>
+<li><strong>Blast radius</strong> — a sandbox holding nothing precious, an egress allowlist, a workspace with no long-lived plaintext credentials in it.</li>
+<li><strong>Least privilege</strong> — the agent has its own identity with the narrowest grant that works. An agent is a deputy holding your authority; an attacker who can supply your agent's <em>reasons</em> does not need your permissions.</li>
+<li><strong>Detection</strong> — transcripts and alerting on the shapes that matter: first contact with a new host, credential-shaped strings in outbound payloads, bursts of writes. This family never blocks anything. Count it at half credit and no more.</li>
+</ul>
+
+<h3>Four things that do not work</h3>
+<ul>
+<li><strong>Instructing the model to ignore injections.</strong> You are adding a sentence to the same undifferentiated stream the attacker is writing into, and theirs is more recent and more specific. This raises the cost of an attack; it does not bound it.</li>
+<li><strong>Filtering for known attack strings.</strong> The payload is natural language with unbounded phrasings, and the useful ones do not look like attacks — "the source recommends updating the deployment configuration" is a sentence a real report would contain.</li>
+<li><strong>Human review as a general answer.</strong> Review is a strong control against a suspicious diff and a weak one against a boring diff. A green bot PR titled <code>chore: rotate deploy key</code>, matching an issue that reads like it came from the team, gets merged. Approval gates also decay: one that fires forty times a day is one somebody routes around by the end of the month.</li>
+<li><strong>Trusting a tool description because you trust the vendor.</strong> Tool descriptions load into the system prompt at startup — they <em>are</em> instructions, so no downstream framing saves you. Every integration you install is a write to your system prompt on someone else's release schedule. Pin it and diff it, or accept that.</li>
+</ul>
+
+<h3>Two failure modes worth naming</h3>
+<p><strong>Persistence.</strong> A one-shot injection is an incident. An injection that reaches a memory file is a policy change: it survives <code>/clear</code>, restarts, and everyone who joins the repo afterwards, long after the page that planted it is gone. Treat <code>CLAUDE.md</code>, skills and any persistent instruction file as executable — because to the agent, they are.</p>
+<p><strong>Scale.</strong> An agent does not get tired, suspicious, or bored on the two-hundredth identical request. A small overreach that a human would catch on the third repetition becomes a quarterly write-off overnight. Rate and anomaly limits are a security control, not an ops nicety.</p>
+
+<h3>A posture, not a checklist</h3>
+<p>Security spend competes with the thing you were trying to build, and the honest currency is friction rather than money. Every control costs somebody's afternoon, and a control people have switched off is not a control. So the work is to pick the <em>fewest</em> controls that cut the most chains for this deployment — which means writing down the threat list first, and knowing which link each control cuts.</p>
+<p>The range (in the bar above) is where that gets practised: a fixed friction budget, a real threat list per deployment, and a scored guess — before the reveal — about which attacks your own posture actually holds. The gap between how good your defences are and how well you understand them is the interesting number, because it predicts what you will remove the first week it inconveniences someone.</p>
+`,
+    docs: [
+      { label: "Security (official docs)", url: "https://code.claude.com/docs/en/security" },
+      { label: "Identity, access & permissions", url: "https://code.claude.com/docs/en/settings" },
+      { label: "Hooks reference", url: "https://code.claude.com/docs/en/hooks" },
+      { label: "MCP — connecting external tools", url: "https://code.claude.com/docs/en/mcp" },
+      { label: "Effective Harnesses for Long-Running Agents", url: "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents" },
+    ],
+  },
+  {
     id: "sources",
     ordinal: "REF",
     title: "Primary sources",

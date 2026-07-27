@@ -538,6 +538,120 @@ export const questionBank: QuizQuestion[] = [
       "Small samples reveal large effects in agentic systems. LLM-as-judge with a rubric scales grading; judging end states allows different valid paths to the outcome.",
   },
 
+  // L8 — the adversary --------------------------------------------------------
+  {
+    id: "adversarial-1",
+    sectionId: "adversarial",
+    prompt: "Why is prompt injection described as <em>structural</em> rather than a bug to be patched?",
+    options: [
+      "Because current models are undertrained on adversarial data",
+      "Because a context window is one flat token stream — nothing in it marks which sentences carry the operator's authority",
+      "Because tool APIs lack authentication",
+      "Because agents run with too much memory",
+    ],
+    answer: 1,
+    explain:
+      "Operator instructions, memory files, tool descriptions and a stranger's issue all arrive as the same kind of thing: text. The model follows the most relevant instruction it can see. The fix lives in the harness — provenance, gates, blast radius — not in the model's willpower.",
+  },
+  {
+    id: "adversarial-2",
+    sectionId: "adversarial",
+    prompt: "The <em>lethal trifecta</em> is the combination of…",
+    options: [
+      "long context, high temperature, and autonomy",
+      "access to private data, exposure to untrusted content, and a way to communicate outward",
+      "shell access, network access, and file writes",
+      "subagents, memory files, and MCP servers",
+    ],
+    answer: 1,
+    explain:
+      "Any two are survivable; all three in one context is an exfiltration channel. \"Communicate outward\" is broader than it sounds — an image URL or any tool argument reaching a third party is a channel, and the data leaves in the address with nothing erroring.",
+  },
+  {
+    id: "adversarial-3",
+    sectionId: "adversarial",
+    prompt: "Why does no amount of downstream framing protect you from a poisoned MCP tool description?",
+    options: [
+      "Because tool descriptions are encrypted in transit",
+      "Because tool descriptions load into the system prompt at startup — they are instructions the agent is configured with, not content it reads",
+      "Because MCP servers run with root privileges",
+      "Because the model caches descriptions across sessions",
+    ],
+    answer: 1,
+    explain:
+      "Framing fetched content as data works because that content is data. A tool description is instruction by design. Every integration you install is a write to your system prompt on someone else's release schedule — the controls are pinning and diffing.",
+  },
+  {
+    id: "adversarial-4",
+    sectionId: "adversarial",
+    prompt: "What makes an injection that reaches a memory file (CLAUDE.md, a skill) categorically worse than a one-shot injection?",
+    options: [
+      "Memory files are loaded with higher priority than user messages",
+      "It persists — surviving /clear, restarts, and everyone who joins the repo afterwards, long after the source that planted it is gone",
+      "It cannot be detected by transcript logging",
+      "It is executed before the model sees the task",
+    ],
+    answer: 1,
+    explain:
+      "A one-shot injection is an incident; an injection in persistent memory is a policy change. Treat memory files as executable — because to the agent they are — which means reviewing them like source and not letting a run silently self-edit them.",
+  },
+  {
+    id: "adversarial-5",
+    sectionId: "adversarial",
+    prompt: "In the guide's threat model, why is human review a weak general answer?",
+    options: [
+      "Reviewers cannot read agent-generated diffs",
+      "It is strong against a suspicious diff and weak against a boring one — and an approval gate that fires forty times a day gets routed around",
+      "Approval gates are not supported by most harnesses",
+      "Humans approve faster than agents can act",
+    ],
+    answer: 1,
+    explain:
+      "A green bot PR titled \"chore: rotate deploy key\", matching an issue that reads like it came from the team, gets merged. Approval is also the most expensive control by friction, and controls people switch off are not controls.",
+  },
+  {
+    id: "adversarial-6",
+    sectionId: "adversarial",
+    prompt: "Detection controls — transcripts and anomaly alerting — sit where in the scoring?",
+    options: [
+      "Equal to blocking controls, since both end the incident",
+      "Half credit: they bound the blast radius but never cut the chain",
+      "Zero, since they change nothing about the attack",
+      "Above blocking controls, since they catch unknown attacks",
+    ],
+    answer: 1,
+    explain:
+      "Knowing an hour later beats never and loses to no. Detection is the cheapest family and the only one that catches what your threat list missed — but a posture built on it alone contains nothing.",
+  },
+  {
+    id: "adversarial-7",
+    sectionId: "adversarial",
+    prompt: "Why does the range price controls in <em>friction</em> rather than money?",
+    options: [
+      "Because security tooling is mostly free",
+      "Because the real constraint is standing cost in people's days — and a control that gets switched off is not a control",
+      "Because friction is easier to measure than cost",
+      "Because compute cost is already covered by the pattern lab",
+    ],
+    answer: 1,
+    explain:
+      "The budget is what turns \"harden everything\" into a real decision. It forces the actual skill: picking the fewest controls that cut the most chains for this particular deployment, which requires knowing which link each control cuts.",
+  },
+  {
+    id: "adversarial-8",
+    sectionId: "adversarial",
+    prompt: "A worker subagent fetches a page containing injected instructions and repeats them in its summary. What is the failure the orchestrator suffers?",
+    options: [
+      "Context rot from the worker's oversized report",
+      "The injection is laundered through a trusted intermediary — nothing distinguishes what the worker concluded from what the page told it to say",
+      "The worker exceeded its tool allowlist",
+      "The orchestrator's compaction dropped the provenance metadata",
+    ],
+    answer: 1,
+    explain:
+      "Fan-out multiplies trust boundaries; every worker is a new one. The orchestrator holds the write permissions the worker did not, which is exactly why a worker's report has to be read as a claim from elsewhere rather than as an order.",
+  },
+
   // REF — sources -----------------------------------------------------------
   {
     id: "sources-1",

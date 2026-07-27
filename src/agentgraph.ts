@@ -319,6 +319,32 @@ export const GRAPHS: AgentGraph[] = [
       e("t2", "t3", "link", undefined, true),
     ],
   },
+  {
+    id: "trust",
+    title: "The trust boundary",
+    caption:
+      "The same picture an attacker draws. Two very different kinds of text arrive at one flat context window with nothing marking which is which; downstream, the only thing standing between the model's next thought and the world is the gate — and the agent's own credentials are inside the boundary, not outside it.",
+    nodes: [
+      n("operator", 110, 46, "io", "operator", "the actual task", 130),
+      n("untrusted", 340, 46, "io", "untrusted input", "issues · pages · tool output", 210),
+      n("ctx", 190, 150, "store", "context window", "one flat token stream", 220),
+      n("creds", 58, 254, "store", "credentials", "keys · tokens", 116),
+      n("agent", 214, 254, "model", "agent", undefined, 128),
+      n("gate", 434, 254, "gate", "permission gate", "allowlist · hooks · approval", 168),
+      n("tools", 434, 358, "tool", "side effects", "bash · write · network", 168),
+      n("world", 434, 462, "io", "the world", undefined, 130),
+    ],
+    edges: [
+      e("operator", "ctx", "flow", undefined, undefined, "v"),
+      e("untrusted", "ctx", "flow", "anyone can write here", undefined, "v"),
+      e("ctx", "agent", "flow", undefined, undefined, "v"),
+      e("agent", "gate", "flow", undefined, undefined, "h"),
+      e("gate", "tools", "flow", undefined, undefined, "v"),
+      e("tools", "world", "flow", undefined, undefined, "v"),
+      // Inside the boundary, reachable by whatever the agent decides to do.
+      e("agent", "creds", "link", undefined, true, "h"),
+    ],
+  },
 ];
 
 const byId = new Map(GRAPHS.map((g) => [g.id, g]));

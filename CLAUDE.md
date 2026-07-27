@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A static, zero-runtime-dependency TypeScript site (Vite) that teaches teams
-agentic workflows with Claude, organized as levels L0–L7 plus a toolbox (TB)
-and a sources/reference (REF) section. There is no backend; reading progress
+agentic workflows with Claude, organized as levels L0–L8 plus a prompt-writing
+section (PW), a toolbox (TB) and a sources/reference (REF) section. There is no backend; reading progress
 ("the ledger") and recall-drill scheduling are persisted per-device in
 `localStorage`, and progress can travel between people via share-links
 encoded in the URL hash.
@@ -34,7 +34,7 @@ Everything renders from typed data. The moving parts:
 
 - **`src/content.ts`** — defines the `Section` and `DocLink` interfaces, the
   `meta` object (title/subtitle/updated/disclaimer), and `sections` L0–L3.
-- **`src/content2.ts`** — `sections2`: prompt writing (PW), the toolbox, L4–L7,
+- **`src/content2.ts`** — `sections2`: prompt writing (PW), the toolbox, L4–L8,
   and sources. Imports the `Section` type from `content.ts`.
 - **`src/main.ts`** — concatenates `[...part1, ...sections2]` into one array,
   then renders the whole page by string-templating `innerHTML`. It owns ledger
@@ -71,7 +71,7 @@ Everything renders from typed data. The moving parts:
   edges, hand-laid coordinates) plus a string renderer, no DOM. `renderGraph`
   emits inline SVG styled entirely from `styles.css`; `renderFigure` wraps it
   with its caption; `mermaidFor` emits the same graph as a Mermaid flowchart
-  (the architect's brief carries one into the RFC). Eleven graphs: the seven
+  (the architect's brief carries one into the RFC). Twelve graphs: the seven
   L1 patterns — **their ids are the `PatternId`s**, so `graphFor(pattern)`
   works — plus `augmented`, `loop`, `research`, and `teams`. Node ids are the
   run positions `labsim.ts` emits; if you rename one, rename it there too or
@@ -143,7 +143,8 @@ Everything renders from typed data. The moving parts:
   black-box `found`/`overlooked` are separate kinds on purpose: the flight
   record reports drill accuracy as recall from memory, and folding
   trajectory-review calls into it would silently change what that number
-  means.
+  means. Range results (`held`/`breached`) are a third pair for the same
+  reason.
 - **`src/stats.ts`** — the "flight record" dashboard: streaks, a 12-week
   activity heatmap, per-section recall mastery (average Leitner box), a
   trajectory-review panel (per-incident best scores from `readBlackBox()`),
@@ -165,6 +166,37 @@ Everything renders from typed data. The moving parts:
   a `<div data-widget="token-meter">`. Same privacy contract as the bench:
   what you paste is never persisted, never put in the URL, never leaves the
   tab — and unlike the bench it keeps no scoreboard either.
+- **`src/range.ts`** — the range: **the adversarial exercise**, and the only
+  one here that models an opponent. Pure logic and data, no DOM. Four
+  `Deployment`s (where the agent runs, who can write into its context, and the
+  *friction budget* the setting can bear) × thirteen `Control`s priced in
+  friction points × ten `Threat`s. A threat is not a single chain: it carries
+  two `Route`s to the same outcome, each an ordered list of stages, and a
+  stage is cut when the posture holds any control in its `blockedBy` list.
+  **Containment requires cutting every route** — the second route is
+  deliberately the one the obvious control misses, which is what stops the
+  exercise from being a checklist. `detectedBy` controls never block; they
+  score at half credit (`DETECTED_WEIGHT`). `costOf` applies a deployment's
+  `frictionMod`, so the same control is priced differently by setting (an
+  approval queue is affordable on a nightly batch and a staffing decision on a
+  support desk) — anything reading a control's price must go through it rather
+  than reading `Control.friction` directly. `runRange` also returns the
+  marginal analysis (`advice`: residual risk removed per friction point) and
+  `idle` (friction that bought nothing here). `calibrate` scores the reader's
+  pre-reveal prediction separately from the posture, with blind spots
+  (believed covered, actually open) called out as the dangerous direction.
+  **The routes, prices and budgets are balanced numbers**: `src/range.ts` is
+  tuned so a grade-A posture is reachable but rare (roughly 1–4% of in-budget
+  postures, and not at all on the laptop). Changing a `blockedBy` list, a
+  `friction`, a `frictionMod` or a `budget` moves that — brute-force the
+  subsets and re-check before committing, or the exercise quietly becomes
+  either trivial or hopeless.
+- **`src/rangeui.ts`** — the range's overlay: board → harden (spend the
+  budget) → call it (predict, per threat, whether your own posture holds) →
+  the run (routes walk link by link) → debrief. The prediction screen is what
+  makes the calibration score possible, and it must stay *before* the reveal.
+  Exports a Markdown threat model; nothing the reader chooses leaves the
+  device.
 - **`src/share.ts`** — team share-links: the ledger's done-bits packed into a
   hex payload in the URL hash (`#share=2.<hex>`, bit order = sections-array
   order, so **don't reorder or insert sections** without bumping the payload
@@ -199,7 +231,8 @@ interview under `agentic-guide-architect-v1` (`ARCH_KEY` in
 (`WINGS_KEY` in `checkride.ts`); black-box incident records under
 `agentic-guide-blackbox-v1` (`BB_KEY` in `blackbox.ts`); the bench's
 content-free scoreboard under `agentic-guide-bench-v1` (`BENCH_KEY` in
-`bench.ts`). Changing any key resets everyone's saved state for that feature
+`bench.ts`); the range's best posture per deployment under
+`agentic-guide-range-v1` (`RANGE_KEY` in `range.ts`). Changing any key resets everyone's saved state for that feature
 — they are deliberately independent stores.
 
 Three URL-hash payloads coexist and are mutually exclusive: `#share=2.…`
@@ -258,6 +291,8 @@ to readers via `meta.disclaimer` and should stay accurate.
 When editing a section's claims, also update its questions in `src/quiz.ts`
 (they quiz the exact numbers and phrasings the sections teach), the matching
 model terms and finding texts in `src/labsim.ts`, the fault blurbs and per-turn
-commentary in `src/blackbox.ts`, and any rule in `src/rubric.ts` whose `ref`
-points at that section. The palette's search index derives from the bodies
+commentary in `src/blackbox.ts`, any rule in `src/rubric.ts` whose `ref`
+points at that section, and — for anything about untrusted input, permissions,
+credentials or isolation — the control blurbs and route stages in
+`src/range.ts`. The palette's search index derives from the bodies
 automatically and needs no maintenance.

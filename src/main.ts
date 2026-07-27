@@ -8,6 +8,7 @@ import { initLab } from "./lab";
 import { initStats } from "./stats";
 import { initBlackBox } from "./blackboxui";
 import { initBench } from "./bench";
+import { initRange } from "./rangeui";
 import { initArchitect } from "./architectui";
 import { readArchHash } from "./architect";
 import { initCheckride, readWingsHash } from "./checkride";
@@ -150,7 +151,7 @@ function render(): void {
           </div>
         </div>
         <ul class="nav-list">${navItems}</ul>
-        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · architect · pattern lab · black box · bench · checkride · progress travels by link</p>
+        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · architect · pattern lab · black box · bench · range · checkride · progress travels by link</p>
       </nav>
       <div class="main">
         <header class="gauge-bar" role="status" aria-live="polite">
@@ -162,7 +163,8 @@ function render(): void {
           <button class="bar-btn" id="btn-lab" type="button" title="Pattern lab — simulate an agent run and watch the trade-offs">lab</button>
           <button class="bar-btn" id="btn-bb" type="button" title="The black box — read a recorded agent run and find where it went wrong">black box</button>
           <button class="bar-btn" id="btn-bench" type="button" title="The bench — review your own CLAUDE.md, prompt, or tool description">bench</button>
-          <button class="bar-btn" id="btn-ride" type="button" title="The checkride — 12-question exam, pass mark 80%, shareable wings">checkride</button>
+          <button class="bar-btn" id="btn-range" type="button" title="The range — spend a friction budget on controls, then find out which attacks your posture actually holds">range</button>
+          <button class="bar-btn" id="btn-ride" type="button" title="The checkride — 15-question exam, pass mark 80%, shareable wings">checkride</button>
           <button class="bar-btn" id="btn-stats" type="button" title="Flight record — streaks, mastery, and review forecast">stats</button>
           <button class="bar-btn" id="btn-search" type="button" title="Search the guide (⌘K)">⌘K</button>
         </header>
@@ -332,6 +334,13 @@ const bench = initBench(jumpTo, ordinalOf, toast);
 document.getElementById("btn-bench")?.addEventListener("click", () => bench.open());
 
 // ---------------------------------------------------------------------------
+// The range — the adversarial exercise (rangeui.ts). Spend a friction budget
+// on controls, call which attacks your posture holds, then watch the chains.
+// ---------------------------------------------------------------------------
+const range = initRange(jumpTo, ordinalOf, toast);
+document.getElementById("btn-range")?.addEventListener("click", () => range.open());
+
+// ---------------------------------------------------------------------------
 // The architect — profile a real task, get a design + brief (architectui.ts).
 // A #arch= link opens straight onto the shared verdict.
 // ---------------------------------------------------------------------------
@@ -410,13 +419,18 @@ const palette = initPalette(sections, [
   },
   {
     label: "Take the checkride",
-    hint: "12 questions, one pass, 80% to earn shareable wings",
+    hint: "15 questions, one pass, 80% to earn shareable wings",
     run: () => checkride.open(),
   },
   {
     label: "Open the black box",
     hint: "read a recorded agent run and find the turns where it went wrong",
     run: () => blackbox.open(),
+  },
+  {
+    label: "Run the range",
+    hint: "spend a friction budget on controls, then find out which attacks your posture actually holds",
+    run: () => range.open(),
   },
   {
     label: "Review an artifact on the bench",
