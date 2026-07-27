@@ -11,6 +11,7 @@ import type { QuizQuestion } from "./quiz";
 import { readActivity } from "./activity";
 import { readSrsSnapshot } from "./drill";
 import { INCIDENTS, readBlackBox } from "./blackbox";
+import { DEPLOYMENTS, readRange } from "./range";
 
 const DAY = 86_400_000;
 const HEAT_DAYS = 84; // 12 weeks
@@ -198,6 +199,33 @@ export function initStats(
       <p class="fr-sub">${eye}</p>
       <div class="fr-mastery">${incidentRows}</div>`;
 
+    // --- the range -----------------------------------------------------------
+    // Two numbers, deliberately side by side: how much risk the reader's best
+    // posture removed, and how well they predicted their own posture. The
+    // second is the one that says whether the first will survive a busy week.
+    const rangeStore = readRange();
+    const rangeRows = DEPLOYMENTS.map((d) => {
+      const rec = rangeStore[d.id];
+      return `
+        <div class="fr-mastery-row">
+          <span class="ord pal-ord">${rec ? rec.grade : "—"}</span>
+          <span class="fr-mastery-title">${d.name}</span>
+          <div class="fr-mastery-bar"><div class="fr-mastery-fill" style="width:${rec?.best ?? 0}%"></div></div>
+          <span class="fr-mastery-meta">${rec ? `${rec.best}% · ${rec.friction} pts · calls ${rec.bestCal}%` : "unrun"}</span>
+        </div>`;
+    }).join("");
+    const held = events.filter((e) => e.k === "held").length;
+    const breached = events.filter((e) => e.k === "breached").length;
+    const rangeRun = DEPLOYMENTS.filter((d) => rangeStore[d.id]).length;
+    const rangeNote =
+      held + breached > 0
+        ? `${Math.round((held / (held + breached)) * 100)}% of threat chains contained across ${rangeRun}/${DEPLOYMENTS.length} deployments hardened.`
+        : `No deployment hardened yet — the range is where the threat model gets practised against a budget.`;
+    const rangePanel = `
+      <h4 class="lab-h">threat posture <span class="lab-h-ref">(the range)</span></h4>
+      <p class="fr-sub">${rangeNote}</p>
+      <div class="fr-mastery">${rangeRows}</div>`;
+
     card.innerHTML = `
       <p class="overlay-eyebrow">flight record</p>
       <h3 class="drill-title">Your study telemetry</h3>
@@ -206,6 +234,7 @@ export function initStats(
       ${heat}
       ${mastery}
       ${trajectory}
+      ${rangePanel}
       ${forecast}
       <div class="drill-actions">
         <button class="drill-btn" data-act="close" type="button">close</button>

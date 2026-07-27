@@ -13,7 +13,18 @@ const CAP = 4000; // oldest events fall off; the heatmap only looks back 12 week
 // ("found"/"overlooked") on purpose: the flight record reports drill accuracy
 // as recall from memory, and folding trajectory-review calls into that number
 // would quietly change what it means.
-export type ActivityKind = "read" | "hit" | "miss" | "found" | "overlooked" | "bench";
+// Range results ("held"/"breached") are a third pair for the same reason: a
+// posture that contains a threat chain is not recall and is not trajectory
+// review, and rolling it into either would change what those numbers mean.
+export type ActivityKind =
+  | "read"
+  | "hit"
+  | "miss"
+  | "found"
+  | "overlooked"
+  | "bench"
+  | "held"
+  | "breached";
 
 export interface ActivityEvent {
   t: number; // epoch ms

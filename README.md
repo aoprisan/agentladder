@@ -2,7 +2,8 @@
 
 A static TypeScript site (Vite, zero runtime dependencies) that takes a team
 from the basics of agentic AI to the 2026 state of the art, focused on Claude.
-Content is organized as levels L0–L7 plus a toolbox and a sources section,
+Content is organized as levels L0–L8 plus a prompt-writing section, a
+toolbox and a sources section,
 with official documentation links throughout. Reading progress is tracked
 per-device in localStorage (the "ledger" — the same pattern the guide's L7
 section describes for long-running agents).
@@ -31,11 +32,36 @@ Beyond reading, the guide is a learning instrument:
   quality / cost / latency and links every finding back to the section that
   teaches it. Same setup, same run — it's a model of the trade-offs, built
   from the guide's own claims, not a slot machine.
+- **The black box** — trajectory review (the `black box` button): four
+  recorded agent runs that went wrong, with the transcript and the outcome but
+  no diagnosis. Flag the turns where the run went off the rails and name the
+  failure mode from a ten-entry taxonomy; scoring gives partial credit for
+  locating a fault you misname and penalises false alarms, so "flag
+  everything" loses.
+- **The bench** — a static review of a real artifact (the `bench` button):
+  paste your own CLAUDE.md, agent prompt, or tool description and get
+  line-anchored findings, each with a fix and a citation to the section that
+  justifies it. What you paste is never persisted, never put in the URL, and
+  never leaves the tab.
+- **The range** — the adversarial exercise (the `range` button). Pick a
+  deployment (public triage bot, customer-facing support agent, developer
+  laptop, overnight researcher), spend a fixed budget of *friction points* on
+  thirteen controls, then commit — before the reveal — to which attacks you
+  think your own posture holds. Ten threats, each with two routes to the same
+  outcome; a threat counts as contained only when both routes are cut, and the
+  second route is always the one the obvious control misses. The debrief
+  scores the posture and your calling of it separately (the gap is the
+  interesting number), ranks the best next point of friction to spend, names
+  the controls that bought nothing in this setting, and exports the whole
+  thing as a Markdown threat model. The same control costs different amounts
+  in different deployments — an approval queue is affordable on a nightly
+  batch and a staffing decision on a support desk.
 - **Flight record** — a retention dashboard (the `stats` button): study
   streaks, a 12-week activity heatmap, per-section recall mastery from the
-  Leitner boxes, and a 14-day review-due forecast.
-- **The checkride** — a certification exam (the `checkride` button): 12
-  questions sampled across every level, one pass, no feedback until the end,
+  Leitner boxes, per-incident trajectory-review scores, threat posture per
+  deployment, and a 14-day review-due forecast.
+- **The checkride** — a certification exam (the `checkride` button): 15
+  questions sampled for coverage across every level, one pass, no feedback until the end,
   pass mark 80%. Passing earns "wings" — a shareable, checksummed certificate
   link (`#wings=…`) that shows teammates a verified score banner when opened.
   Unlike the drill, the checkride never touches your review schedule.
@@ -86,7 +112,14 @@ index.html            app shell
 public/               favicon (SVG), manifest, service worker, icons
 src/main.ts           rendering, ledger state, scrollspy rail, feature wiring
 src/content.ts        sections L0–L3 (typed data)
-src/content2.ts       toolbox, L4–L7, sources
+src/content2.ts       prompt writing, toolbox, L4–L8, sources
+src/range.ts          the range: controls, threats, routes, scoring (pure logic)
+src/rangeui.ts        the range overlay (harden → call it → run → debrief)
+src/rubric.ts         the bench's review rules (pure logic)
+src/bench.ts          the bench overlay
+src/blackbox.ts       recorded incidents + fault taxonomy (pure data)
+src/blackboxui.ts     the black box overlay
+src/agentgraph.ts     agent topology diagrams (pure data + SVG renderer)
 src/quiz.ts           recall-drill question bank (typed data)
 src/drill.ts          spaced-repetition scheduler + drill overlay
 src/labsim.ts         pattern-lab simulation engine (pure logic)
