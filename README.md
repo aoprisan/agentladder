@@ -43,6 +43,18 @@ Beyond reading, the guide is a learning instrument:
   line-anchored findings, each with a fix and a citation to the section that
   justifies it. What you paste is never persisted, never put in the URL, and
   never leaves the tab.
+- **The hangar** — the bench's before/after mode: two versions of the same
+  artifact side by side and a findings *diff* — which of the guide's
+  objections your edit fixed, which it introduced, which stand — plus the
+  score and token delta, so the bench works as an editing loop. Findings are
+  matched by rule and line *content*, so an edit that merely shifts line
+  numbers shows no churn. Same privacy contract as the bench.
+- **The wind tunnel** — an inline widget in L2: paste a real conversation or
+  agent transcript and watch it occupy the context window turn by turn — the
+  rot band, the point where compaction fires, the overflow line — then apply
+  each L2 strategy retroactively (compaction, dropping old tool results,
+  structured notes) and see what it would have kept. Same thresholds as the
+  pattern lab, same estimator as the token meter, same privacy contract.
 - **The range** — the adversarial exercise (the `range` button). Pick a
   deployment (public triage bot, customer-facing support agent, developer
   laptop, overnight researcher), spend a fixed budget of *friction points* on
@@ -65,10 +77,27 @@ Beyond reading, the guide is a learning instrument:
   pass mark 80%. Passing earns "wings" — a shareable, checksummed certificate
   link (`#wings=…`) that shows teammates a verified score banner when opened.
   Unlike the drill, the checkride never touches your review schedule.
+- **The crew console** — team coverage with no backend (the `crew` button):
+  paste the share-links and wings links teammates sent, one per line with an
+  optional name prefix, and read the coverage matrix — who has read what,
+  the team's blind spots, who is certified — exportable as Markdown for a
+  standup. Links are decoded locally with the same decoders the share and
+  wings features use (old link versions keep working); nothing is fetched
+  and nothing leaves the device.
+- **The syllabus** — a study plan with a date on it (from the palette or the
+  flight record): pick when you want wings and get a day-by-day plan —
+  sections in curriculum order, each exercise placed after the level that
+  teaches it, drill days where the Leitner forecast says reviews fall due,
+  the checkride last with a buffer day. Impossible dates are refused with
+  the earliest feasible counter-offer. Exports Markdown and an `.ics`.
+- **Ghost runs** — a pattern-lab debrief has a "copy run link" that encodes
+  the whole configuration into `#lab=…`. The lab is deterministic by design,
+  so a teammate opening the link watches the *same run* fly — architect
+  missions travel too, as their eight trait digits.
 - **Command palette** — `⌘K` / `Ctrl+K` / `/` opens full-text search across
   all section content, with quick actions (ask the architect, start drill,
-  take the checkride, open the lab, open the flight record, copy progress
-  link).
+  take the checkride, open the lab, the hangar, the crew console, the
+  syllabus, the wind tunnel, open the flight record, copy progress link).
 - **Team share-links** — your ledger encodes into a URL hash (no backend, no
   account). Send the link; a teammate gets a merge / replace / ignore banner.
 
@@ -115,8 +144,14 @@ src/content.ts        sections L0–L3 (typed data)
 src/content2.ts       prompt writing, toolbox, L4–L8, sources
 src/range.ts          the range: controls, threats, routes, scoring (pure logic)
 src/rangeui.ts        the range overlay (harden → call it → run → debrief)
-src/rubric.ts         the bench's review rules (pure logic)
-src/bench.ts          the bench overlay
+src/rubric.ts         the bench's review rules + the hangar's diff (pure logic)
+src/bench.ts          the bench overlay (single review + before/after compare)
+src/crew.ts           crew console: link decoding, aggregation (pure logic)
+src/crewui.ts         the crew console overlay
+src/windtunnel.ts     wind tunnel: transcript replay engine (pure logic)
+src/windtunnelui.ts   the wind tunnel widget (L2)
+src/syllabus.ts       study planner + Markdown/.ics exports (pure logic)
+src/syllabusui.ts     the syllabus overlay
 src/blackbox.ts       recorded incidents + fault taxonomy (pure data)
 src/blackboxui.ts     the black box overlay
 src/agentgraph.ts     agent topology diagrams (pure data + SVG renderer)

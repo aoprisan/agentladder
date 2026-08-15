@@ -1011,6 +1011,125 @@ export function buildReviewMarkdown(review: Review, ordinalOf: (id: string) => s
 }
 
 // ---------------------------------------------------------------------------
+// The hangar — before/after comparison. Two reviews of the same artifact are
+// diffed into three lists: findings the edit fixed, findings it introduced,
+// and findings standing in both. Matching is by rule id plus a fingerprint of
+// the offending line's *content* (whitespace-collapsed), not its number — an
+// unrelated edit that shifts every line must not report the whole review as
+// fixed-and-reintroduced. Whole-document findings (line 0) match on rule id
+// alone. Re-check the fingerprint if Finding's shape changes.
+// ---------------------------------------------------------------------------
+
+export interface Comparison {
+  /** in the before, absent from the after */
+  fixed: Finding[];
+  /** absent from the before, present in the after */
+  introduced: Finding[];
+  /** present in both — the after's instance, so line numbers stay clickable */
+  standing: Finding[];
+}
+
+function fingerprint(f: Finding, lines: string[]): string {
+  const content =
+    f.line > 0 ? (lines[f.line - 1] ?? "").trim().replace(/\s+/g, " ") : "@doc";
+  return `${f.rule}::${content}`;
+}
+
+export function compareReviews(
+  before: Review,
+  beforeText: string,
+  after: Review,
+  afterText: string,
+): Comparison {
+  const aLines = beforeText.split(/\r?\n/);
+  const bLines = afterText.split(/\r?\n/);
+
+  // Multisets: the same rule can legitimately fire twice on identical line
+  // content, and one occurrence being fixed while the other stands must not
+  // cancel out.
+  const count = (fs: Finding[], lines: string[]): Map<string, number> => {
+    const m = new Map<string, number>();
+    for (const f of fs) {
+      const k = fingerprint(f, lines);
+      m.set(k, (m.get(k) ?? 0) + 1);
+    }
+    return m;
+  };
+  const inAfter = count(after.findings, bLines);
+  const inBefore = count(before.findings, aLines);
+
+  const fixed: Finding[] = [];
+  for (const f of before.findings) {
+    const k = fingerprint(f, aLines);
+    const n = inAfter.get(k) ?? 0;
+    if (n > 0) inAfter.set(k, n - 1);
+    else fixed.push(f);
+  }
+
+  const introduced: Finding[] = [];
+  const standing: Finding[] = [];
+  for (const f of after.findings) {
+    const k = fingerprint(f, bLines);
+    const n = inBefore.get(k) ?? 0;
+    if (n > 0) {
+      inBefore.set(k, n - 1);
+      standing.push(f);
+    } else {
+      introduced.push(f);
+    }
+  }
+
+  return { fixed, introduced, standing };
+}
+
+/** The before/after review as Markdown — the hangar's exportable artifact. */
+export function buildComparisonMarkdown(
+  before: Review,
+  after: Review,
+  cmp: Comparison,
+  ordinalOf: (id: string) => string,
+): string {
+  const kindName = KINDS.find((k) => k.id === before.kind)!.name;
+  const delta = after.score - before.score;
+  const tokDelta = after.metrics.approxTokens - before.metrics.approxTokens;
+  const sign = (n: number): string => (n > 0 ? `+${n}` : String(n));
+
+  const lines: string[] = [
+    `# Hangar review — ${kindName}, before/after`,
+    "",
+    `| | before | after | Δ |`,
+    `|---|---|---|---|`,
+    `| grade | ${before.grade} (${before.score}/100) | ${after.grade} (${after.score}/100) | ${sign(delta)} |`,
+    `| ~tokens | ${before.metrics.approxTokens.toLocaleString()} | ${after.metrics.approxTokens.toLocaleString()} | ${sign(tokDelta)} |`,
+    `| findings | ${before.findings.length} | ${after.findings.length} | ${sign(after.findings.length - before.findings.length)} |`,
+    "",
+    "> Generated locally by the agentic-workflows field guide. Heuristic, not authoritative — every finding cites the principle it came from.",
+    "",
+  ];
+
+  const section = (title: string, fs: Finding[], empty: string): void => {
+    lines.push(`## ${title} (${fs.length})`, "");
+    if (fs.length === 0) {
+      lines.push(empty, "");
+      return;
+    }
+    for (const f of fs) {
+      const where = f.line > 0 ? `line ${f.line}` : "whole file";
+      lines.push(
+        `- **[${f.severity}] ${f.title}** — ${where} *(${ordinalOf(f.ref)})*`,
+      );
+    }
+    lines.push("");
+  };
+
+  section("Fixed", cmp.fixed, "Nothing the edit resolved.");
+  section("Introduced", cmp.introduced, "Nothing new — the edit added no findings.");
+  section("Standing", cmp.standing, "Nothing survives in both versions.");
+
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // Worked examples — a bad artifact of each kind, so the bench does something
 // the first time it is opened. Each is a composite of things that genuinely
 // show up in the wild, not a strawman built to trip the rules.

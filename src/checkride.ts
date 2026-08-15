@@ -85,14 +85,30 @@ export interface WingsPayload {
   valid: boolean; // checksum matched
 }
 
-export function readWingsHash(): WingsPayload | null {
-  const m = location.hash.match(/^#wings=1\.(\d{1,3})\.(\d{8})\.([^.]*)\.([0-9a-f]{6})$/i);
+/**
+ * Decode a wings hash from any string (a full URL, a bare `#wings=…`). The
+ * crew console (crew.ts) feeds pasted certificate links through this so the
+ * payload format and checksum are decoded in exactly one place.
+ */
+export function decodeWingsHash(hash: string): WingsPayload | null {
+  const m = hash.match(/#wings=1\.(\d{1,3})\.(\d{8})\.([^.\s]*)\.([0-9a-f]{6})/i);
   if (!m) return null;
   const pct = Number(m[1]);
   if (pct > 100) return null;
   const name = decodeURIComponent(m[3]);
   const valid = checksum(`1.${pct}.${m[2]}.${name}.${SALT}`) === m[4].toLowerCase();
   return { pct, date: fmtDate(m[2]), name, valid };
+}
+
+export function readWingsHash(): WingsPayload | null {
+  if (!/^#wings=/.test(location.hash)) return null;
+  return decodeWingsHash(location.hash);
+}
+
+/** Read-only best local checkride result, for the syllabus planner. */
+export function readBestWings(): { pct: number; date: string } | null {
+  const b = loadBest();
+  return b ? { pct: b.pct, date: b.date } : null;
 }
 
 function shuffle<T>(arr: T[]): T[] {

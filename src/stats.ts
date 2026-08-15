@@ -42,6 +42,7 @@ export function initStats(
   sections: Section[],
   questions: QuizQuestion[],
   getLedger: () => Ledger,
+  onPlan?: () => void,
 ): StatsHandle {
   const overlay = document.createElement("div");
   overlay.className = "overlay stats";
@@ -237,9 +238,14 @@ export function initStats(
       ${rangePanel}
       ${forecast}
       <div class="drill-actions">
+        ${onPlan ? `<button class="drill-btn primary" data-act="plan" type="button" title="The syllabus — a day-by-day plan from here to the checkride">plan the next stretch</button>` : ""}
         <button class="drill-btn" data-act="close" type="button">close</button>
       </div>`;
 
+    card.querySelector("[data-act=plan]")?.addEventListener("click", () => {
+      close();
+      onPlan?.();
+    });
     card.querySelector("[data-act=close]")?.addEventListener("click", close);
   }
 

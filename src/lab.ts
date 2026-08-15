@@ -12,6 +12,7 @@
 import {
   MISSIONS,
   PATTERNS,
+  buildLabUrl,
   simulate,
   type LabConfig,
   type Mission,
@@ -22,13 +23,19 @@ import { graphFor, renderFigure, renderGraph } from "./agentgraph";
 
 export interface LabHandle {
   open(): void;
-  /** fly a mission that isn't in MISSIONS — the architect hands its synthesized "your task" mission here */
-  openWith(mission: Mission, cfg: LabConfig): void;
+  /** fly a mission that isn't in MISSIONS — the architect hands its synthesized
+   *  "your task" mission here, with its trait digits so the run stays linkable */
+  openWith(mission: Mission, cfg: LabConfig, archDigits?: string): void;
+  /** open straight onto a configured run — a #lab= ghost-run link landing */
+  openRun(cfg: LabConfig): void;
 }
 
 const TICK_MS = 340; // event-reveal cadence during the run
 
-export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
+export function initLab(
+  jumpTo: (sectionId: string) => void,
+  toast: (msg: string) => void,
+): LabHandle {
   // Deliberately naive defaults — the first run is the first lesson.
   let cfg: LabConfig = {
     mission: "inbox",
@@ -52,6 +59,9 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
   // around as a chip so the reader can flip back.
   let custom: Mission | null = null;
   let customActive = false;
+  // The architect's eight trait digits for the custom mission, when known —
+  // what lets a ghost-run link reconstruct the mission on the other end.
+  let customArch: string | null = null;
 
   const activeMission = (): Mission =>
     customActive && custom ? custom : MISSIONS.find((m) => m.id === cfg.mission)!;
@@ -68,9 +78,18 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
     renderConfig();
   }
 
-  function openWith(mission: Mission, newCfg: LabConfig): void {
+  function openWith(mission: Mission, newCfg: LabConfig, archDigits?: string): void {
     custom = mission;
     customActive = true;
+    customArch = archDigits ?? null;
+    cfg = { ...newCfg };
+    overlay.hidden = false;
+    document.addEventListener("keydown", onKey);
+    startRun();
+  }
+
+  function openRun(newCfg: LabConfig): void {
+    customActive = false;
     cfg = { ...newCfg };
     overlay.hidden = false;
     document.addEventListener("keydown", onKey);
@@ -331,6 +350,10 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
          </div>`
       : "";
 
+    // The run is linkable when it can be reconstructed on the other end: any
+    // canned mission, or an architect mission whose trait digits we hold.
+    const linkable = !customActive || customArch !== null;
+
     card.innerHTML = `
       <p class="overlay-eyebrow">pattern lab · debrief</p>
       <h3 class="drill-title">${mission.name}</h3>
@@ -340,6 +363,7 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
       ${rec}
       <div class="drill-actions">
         <button class="drill-btn primary" data-act="tweak" type="button">tweak the setup</button>
+        ${linkable ? `<button class="drill-btn" data-act="link" type="button" title="Deterministic by design — the link replays this exact run on any device">copy run link</button>` : ""}
         <button class="drill-btn" data-act="close" type="button">done</button>
       </div>`;
 
@@ -350,6 +374,13 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
       }),
     );
     card.querySelector("[data-act=tweak]")?.addEventListener("click", renderConfig);
+    card.querySelector("[data-act=link]")?.addEventListener("click", () => {
+      const url = buildLabUrl(cfg, customActive ? customArch ?? undefined : undefined);
+      navigator.clipboard.writeText(url).then(
+        () => toast("run link copied — same setup, same run, on any device"),
+        () => window.prompt("Copy this run link:", url),
+      );
+    });
     card.querySelector("[data-act=close]")?.addEventListener("click", close);
     card.querySelector("[data-act=fly-rec]")?.addEventListener("click", () => {
       const r = result.recommended!;
@@ -358,5 +389,5 @@ export function initLab(jumpTo: (sectionId: string) => void): LabHandle {
     });
   }
 
-  return { open, openWith };
+  return { open, openWith, openRun };
 }

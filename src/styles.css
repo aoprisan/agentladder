@@ -3203,3 +3203,447 @@ a:hover {
     position: static;
   }
 }
+
+/* The hangar — the bench's before/after compare mode ------------------- */
+
+.bn-panes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.bn-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bn-pane .bn-editor {
+  min-height: 190px;
+  max-height: 36vh;
+}
+
+.bn-pane-label {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bn-copy-across {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 2px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.bn-copy-across:hover {
+  color: var(--signal);
+  border-color: var(--signal);
+}
+
+.bn-cmp-fixed .bn-finding {
+  opacity: 0.72;
+}
+
+.bn-cmp-fixed .bn-finding::after {
+  content: "fixed";
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--done);
+}
+
+@media (max-width: 860px) {
+  .bn-panes {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The crew console ----------------------------------------------------- */
+
+.cw-paste {
+  width: 100%;
+  resize: vertical;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: #fbfbfa;
+  color: var(--ink);
+  white-space: pre;
+  overflow: auto;
+}
+
+.cw-scroll {
+  overflow-x: auto;
+  margin: 14px 0 6px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+}
+
+.cw-matrix {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.cw-matrix th,
+.cw-matrix td {
+  padding: 6px 8px;
+  text-align: center;
+  border-bottom: 1px solid var(--hairline);
+  white-space: nowrap;
+}
+
+.cw-matrix th {
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--bg) 60%, var(--surface));
+}
+
+.cw-name,
+.cw-name-h {
+  text-align: left !important;
+  font-weight: 600;
+}
+
+.cw-done {
+  color: var(--done);
+  font-weight: 700;
+}
+
+.cw-not {
+  color: color-mix(in srgb, var(--muted) 45%, transparent);
+}
+
+.cw-wings {
+  color: var(--signal);
+  font-weight: 700;
+}
+
+.cw-wings.unverified {
+  color: var(--bad);
+  text-decoration: underline dotted;
+}
+
+.cw-totals td {
+  border-top: 2px solid var(--hairline);
+  border-bottom: none;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.cw-remove {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.cw-remove:hover {
+  color: var(--bad);
+}
+
+/* The wind tunnel ------------------------------------------------------- */
+
+.wt {
+  margin: 18px 0 8px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 16px 18px;
+  background: var(--surface);
+}
+
+.wt-editor {
+  width: 100%;
+  min-height: 150px;
+  max-height: 34vh;
+  resize: vertical;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: #fbfbfa;
+  color: var(--ink);
+  white-space: pre;
+  overflow: auto;
+}
+
+.wt-controls {
+  margin-top: 12px;
+}
+
+.wt-ctl-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.wt-strategy-blurb {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.wt-plot {
+  position: relative;
+  height: 180px;
+  margin-top: 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background:
+    repeating-linear-gradient(
+      to top,
+      transparent 0 24px,
+      color-mix(in srgb, var(--hairline) 45%, transparent) 24px 25px
+    ),
+    #fbfbfa;
+  overflow: hidden;
+}
+
+.wt-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  border-top: 1px dashed;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.wt-line-rot {
+  border-color: color-mix(in srgb, var(--signal) 55%, transparent);
+}
+
+.wt-line-compact {
+  border-color: color-mix(in srgb, var(--signal-bright) 75%, transparent);
+}
+
+.wt-line-overflow {
+  border-color: color-mix(in srgb, var(--bad) 70%, transparent);
+}
+
+.wt-cols {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 6px;
+  overflow-x: auto;
+}
+
+.wt-col {
+  position: relative;
+  flex: 1 0 6px;
+  max-width: 26px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.wt-bar {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  background: color-mix(in srgb, var(--done) 65%, var(--surface));
+  min-height: 2px;
+}
+
+.wt-bar.rot {
+  background: color-mix(in srgb, var(--signal) 70%, var(--surface));
+}
+
+.wt-bar.hot {
+  background: var(--signal-bright);
+}
+
+.wt-bar.crit {
+  background: var(--bad);
+}
+
+.wt-compact {
+  position: absolute;
+  top: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  color: var(--signal-bright);
+  z-index: 2;
+}
+
+.wt-legend {
+  margin: 8px 0 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.wt-key {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: baseline;
+  background: color-mix(in srgb, var(--done) 65%, var(--surface));
+}
+
+.wt-key.rot {
+  background: color-mix(in srgb, var(--signal) 70%, var(--surface));
+}
+
+.wt-key.hot {
+  background: var(--signal-bright);
+}
+
+.wt-key.crit {
+  background: var(--bad);
+}
+
+.wt-notes {
+  margin-top: 12px;
+  min-height: 0;
+}
+
+/* The syllabus ---------------------------------------------------------- */
+
+.sy-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 6px 0 14px;
+}
+
+.sy-date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.sy-date-input {
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 7px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.sy-days {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.sy-day {
+  border: 1px solid var(--hairline);
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: var(--surface);
+}
+
+.sy-date {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.sy-iso {
+  margin-left: 10px;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.sy-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sy-item {
+  display: flex;
+  gap: 10px;
+  padding: 3px 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.sy-icon {
+  font-family: var(--mono);
+  color: var(--signal);
+  flex: 0 0 auto;
+  width: 16px;
+  text-align: center;
+}
+
+.sy-item.sy-checkride .sy-icon,
+.sy-item.sy-checkride strong {
+  color: var(--signal-bright);
+}
+
+.sy-item-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sy-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sy-read-link {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.sy-read-link:hover {
+  color: var(--signal);
+}

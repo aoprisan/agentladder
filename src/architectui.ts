@@ -15,6 +15,7 @@ import {
   assess,
   buildBrief,
   buildArchUrl,
+  encodeAnswers,
   type Answers,
   type ArchitectVerdict,
 } from "./architect";
@@ -55,7 +56,7 @@ function saveAnswers(a: Answers): void {
 
 export function initArchitect(
   jumpTo: (sectionId: string) => void,
-  flyInLab: (mission: Mission, cfg: LabConfig) => void,
+  flyInLab: (mission: Mission, cfg: LabConfig, archDigits: string) => void,
   toast: (msg: string) => void,
 ): ArchitectHandle {
   let answers: Answers = loadAnswers() ?? { ...DEFAULT_ANSWERS };
@@ -226,13 +227,17 @@ export function initArchitect(
     );
     card.querySelector("[data-act=fly]")?.addEventListener("click", () => {
       close();
-      flyInLab(v.mission, {
-        mission: "brief",
-        pattern: v.top.pattern,
-        context: v.top.context,
-        compaction: true,
-        tools: "lean",
-      });
+      flyInLab(
+        v.mission,
+        {
+          mission: "brief",
+          pattern: v.top.pattern,
+          context: v.top.context,
+          compaction: true,
+          tools: "lean",
+        },
+        encodeAnswers(v.answers),
+      );
     });
     card.querySelector("[data-act=brief]")?.addEventListener("click", () => renderBrief(v));
     card.querySelector("[data-act=link]")?.addEventListener("click", () => {

@@ -1,5 +1,8 @@
 # Feature proposals — five new instruments
 
+> **Status: all five are implemented.** This document remains the design
+> record; the living documentation is `CLAUDE.md` and the README.
+
 Five feature definitions for the guide, written to be buildable as-is. Each
 follows the house rules: zero runtime dependencies, pure logic separated from
 the overlay that renders it, per-device persistence in `localStorage` under its

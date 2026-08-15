@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A static, zero-runtime-dependency TypeScript site (Vite) that teaches teams
-agentic workflows with Claude, organized as levels L0–L8 plus a prompt-writing
+agentic workflows with Claude, organized as levels L0–L9 plus a prompt-writing
 section (PW), a toolbox (TB) and a sources/reference (REF) section. There is no backend; reading progress
 ("the ledger") and recall-drill scheduling are persisted per-device in
 `localStorage`, and progress can travel between people via share-links
@@ -66,7 +66,16 @@ Everything renders from typed data. The moving parts:
   change, re-check the corresponding model terms and finding texts here.
   Every `SimEvent` also carries a `node` — the id of the place in the
   pattern's topology where it happened, which is what lets the lab light the
-  diagram up as a run plays (see `agentgraph.ts`).
+  diagram up as a run plays (see `agentgraph.ts`). Exports `WINDOW_MODEL`
+  (the rot-floor / compaction / overflow thresholds as shares of the window)
+  so the wind tunnel and the lab never disagree about when things fire. Also
+  hosts the **ghost-run codec** (`buildLabUrl` / `readLabHash`,
+  `#lab=1.<mission>.<pattern>.<context>.<compaction>.<tools>`) — payload
+  fields are *indices into the option arrays in this file*, so the same rule
+  as `share.ts`'s bit order applies: don't reorder or insert missions,
+  patterns, or option values without bumping the payload version and freezing
+  the old order. Every index is bounds-checked on decode; an architect
+  mission travels as `a` + its eight trait digits instead of a mission index.
 - **`src/agentgraph.ts`** — the agent topology diagrams: pure data (nodes,
   edges, hand-laid coordinates) plus a string renderer, no DOM. `renderGraph`
   emits inline SVG styled entirely from `styles.css`; `renderFigure` wraps it
@@ -80,10 +89,12 @@ Everything renders from typed data. The moving parts:
   render, which keeps the SVG out of the palette's search index.
 - **`src/lab.ts`** — the pattern-lab UI over `labsim.ts`: configure → animated
   run (event log + live meters) → debrief. Debrief findings link back into
-  sections via a `jumpTo` callback from `main.ts`. `openWith(mission, cfg)`
-  flies a mission that isn't in `MISSIONS` — the architect hands its
-  synthesized "your task" mission in here, and it appears as an extra chip
-  on the config screen while active.
+  sections via a `jumpTo` callback from `main.ts`. `openWith(mission, cfg,
+  archDigits?)` flies a mission that isn't in `MISSIONS` — the architect
+  hands its synthesized "your task" mission in here (with its trait digits so
+  the run stays linkable), and it appears as an extra chip on the config
+  screen while active. The debrief's "copy run link" builds a `#lab=` ghost
+  run; `openRun(cfg)` is the landing path `main.ts` uses when one arrives.
 - **`src/architect.ts`** — the architect's decision engine, pure logic with
   no DOM. Eight trait questions (`TRAITS`) about a real task → a synthetic
   `Mission` → all seven patterns scored via `patternFit` and stress-tested
@@ -130,12 +141,34 @@ Everything renders from typed data. The moving parts:
   rules encode the guide's claims** — re-check the rules pointed at a section
   when that section changes. Note `contextBudget` lives outside `RULES`
   because it needs the artifact kind, which `Rule.run` doesn't receive.
+  Also hosts the hangar's diff engine: `compareReviews` matches two reviews'
+  findings by rule id plus a fingerprint of the offending line's *content*
+  (so line-shifting edits produce no phantom churn — re-check the fingerprint
+  if `Finding`'s shape changes) into fixed / introduced / standing, and
+  `buildComparisonMarkdown` exports the before/after review.
 - **`src/bench.ts`** — the bench UI: editor → findings, with line links that
   select the offending line back in the textarea. **The pasted text is never
   persisted, never put in the URL, and never leaves the tab** — people paste
   real project files, and one of the rules exists to catch the credentials
   that occasionally come with them. Only a scoreboard (kind, score, tokens,
-  timestamp — no content) persists, under `agentic-guide-bench-v1`.
+  timestamp — no content) persists, under `agentic-guide-bench-v1`. The
+  **hangar** is its compare mode (`openCompare()`): two panes (A = before,
+  B = after), both run through the same rules, findings diffed via
+  `compareReviews`; a compare run's scoreboard entry records both scores,
+  still no content.
+- **`src/crew.ts`** — the crew console's logic: team coverage aggregated from
+  pasted share-links and wings links. Pure logic, no DOM. Reuses
+  `decodeShareHash` (share.ts) and `decodeWingsHash` (checkride.ts) so the
+  payload formats are decoded in exactly one place — old payload versions
+  keep working here for free. Nothing is ever fetched; pasting a URL never
+  causes a request. The roster (names + decoded section ids + wings scores,
+  never the pasted text) persists under `agentic-guide-crew-v1`; it stores
+  section *ids*, not positions, so it survives section insertions without a
+  version bump of its own.
+- **`src/crewui.ts`** — the crew console overlay: paste box → coverage
+  matrix (rows people, columns sections, wings column) → blind-spot list
+  (linked into sections) → Markdown export. Names are escaped before hitting
+  `innerHTML` — they arrive from pasted text, not from this repo.
 - **`src/activity.ts`** — tiny per-device study-event journal (sections read,
   drill hits/misses, black-box calls, bench runs) under
   `agentic-guide-log-v1`; shared by `drill.ts`, `blackboxui.ts`, `bench.ts`
@@ -150,7 +183,21 @@ Everything renders from typed data. The moving parts:
   trajectory-review panel (per-incident best scores from `readBlackBox()`),
   and a 14-day review-due forecast. Read-only over the activity log, the SRS
   store (via `readSrsSnapshot()` from `drill.ts`), the black-box store, and
-  the ledger.
+  the ledger. Its "plan the next stretch" button opens the syllabus.
+- **`src/syllabus.ts`** — the study planner: target date + days-per-week →
+  a day-by-day plan over the ledger (unread sections, curriculum order, two
+  per study day), the drill's own review schedule (via `readSrsSnapshot()` —
+  interval math is imported, never copied), and exercise milestones placed
+  after the level that teaches each one (lab after L3, bench after PW, black
+  box after L4, range after L9 — **this placement encodes the curriculum's
+  shape; re-check it when levels are added**). Infeasible dates are refused
+  with the earliest feasible counter-offer, never crammed. Exports Markdown
+  and a hand-rolled `.ics` (text format, no library). Only the two choices
+  persist, under `agentic-guide-plan-v1`; the plan itself is recomputed from
+  live state on every open.
+- **`src/syllabusui.ts`** — the syllabus overlay: date picker + pace → the
+  day list → copy/download Markdown, download `.ics`. Reached from the
+  palette and the flight record; deliberately no top-bar button.
 - **`src/tokens.ts`** — the token estimator: pure logic, no DOM, no tokenizer
   table. Classifies characters (letters / digits / CJK / punctuation /
   layout) and weights each class, which is enough to show the *shape* of a
@@ -166,6 +213,21 @@ Everything renders from typed data. The moving parts:
   a `<div data-widget="token-meter">`. Same privacy contract as the bench:
   what you paste is never persisted, never put in the URL, never leaves the
   tab — and unlike the bench it keeps no scoreboard either.
+- **`src/windtunnel.ts`** — the wind tunnel's logic: split a pasted
+  transcript into turns (role markers or blank lines), price each with
+  `estimateTokens`, and replay the window occupancy under L2's strategies
+  (none / compaction / drop-old-tool-results / structured notes), applied
+  retroactively. Thresholds come from labsim's `WINDOW_MODEL` as shares of a
+  selectable window (4K/32K/200K — small windows show the dynamics a pasted
+  transcript can reach); **the strategy terms encode L2's claims — when L2
+  changes, re-check them here alongside `labsim.ts`**. Ships
+  `SAMPLE_TRANSCRIPT`, a tool-heavy debugging session sized so the 4K
+  default overflows without a strategy and doesn't with one.
+- **`src/windtunnelui.ts`** — the wind tunnel widget in L2, mounted by
+  `main.ts` into `<div data-widget="wind-tunnel">`. Occupancy bars per turn
+  with the rot/compaction/overflow lines drawn in. Same privacy contract as
+  the token meter: nothing pasted is persisted, linked, or sent, and no
+  scoreboard is kept.
 - **`src/range.ts`** — the range: **the adversarial exercise**, and the only
   one here that models an opponent. Pure logic and data, no DOM. Four
   `Deployment`s (where the agent runs, who can write into its context, and the
@@ -217,7 +279,8 @@ scrollspy all derive from the sections array automatically — no wiring needed.
 anchor and the ledger key. To drop a topology diagram into a body, add an
 empty `<div data-graph="<graph id>"></div>` — `main.ts` fills it from
 `agentgraph.ts`; add the graph there first if it doesn't exist yet. Interactive
-widgets work the same way: `<div data-widget="token-meter"></div>` is mounted
+widgets work the same way: `<div data-widget="token-meter"></div>` (PW) and
+`<div data-widget="wind-tunnel"></div>` (L2) are mounted
 by `hydrateWidgets()` in `main.ts`. Both hooks keep the markup out of the
 content files and out of the palette's search index (which reads the body
 strings, so an empty div contributes nothing).
@@ -232,15 +295,20 @@ interview under `agentic-guide-architect-v1` (`ARCH_KEY` in
 `agentic-guide-blackbox-v1` (`BB_KEY` in `blackbox.ts`); the bench's
 content-free scoreboard under `agentic-guide-bench-v1` (`BENCH_KEY` in
 `bench.ts`); the range's best posture per deployment under
-`agentic-guide-range-v1` (`RANGE_KEY` in `range.ts`). Changing any key resets everyone's saved state for that feature
+`agentic-guide-range-v1` (`RANGE_KEY` in `range.ts`); the crew console's
+roster under `agentic-guide-crew-v1` (`CREW_KEY` in `crew.ts`); the syllabus
+prefs under `agentic-guide-plan-v1` (`PLAN_KEY` in `syllabus.ts`). Changing any key resets everyone's saved state for that feature
 — they are deliberately independent stores.
 
-Three URL-hash payloads coexist and are mutually exclusive: `#share=2.…`
+Four URL-hash payloads coexist and are mutually exclusive: `#share=4.…`
 (ledger bits, `share.ts`), `#arch=1.…` (architect answers, `architect.ts`),
-`#wings=1.…` (checkride certificate, `checkride.ts`). All are read once at
-module init in `main.ts`; section bodies are trusted HTML but hash-sourced
-strings (the wings name) are not — escape anything from a hash before it
-touches `innerHTML`.
+`#wings=1.…` (checkride certificate, `checkride.ts`), `#lab=1.…` (ghost
+runs, `labsim.ts`). All are read once at module init in `main.ts`; section
+bodies are trusted HTML but hash-sourced strings (the wings name) are not —
+escape anything from a hash before it touches `innerHTML`. The `#lab=`
+payload is digits and dots only, and every index is bounds-checked; an
+undecodable `#lab=` hash gets a "predates the current lab" toast, never a
+broken screen.
 
 `src/styles.css` is the design system (imported from `main.ts`).
 `vite.config.ts` sets `base: "./"` so `dist/` is relocatable and works from a
@@ -290,9 +358,14 @@ to readers via `meta.disclaimer` and should stay accurate.
 
 When editing a section's claims, also update its questions in `src/quiz.ts`
 (they quiz the exact numbers and phrasings the sections teach), the matching
-model terms and finding texts in `src/labsim.ts`, the fault blurbs and per-turn
+model terms and finding texts in `src/labsim.ts` — and, for L2 specifically,
+the strategy terms in `src/windtunnel.ts`, which replay L2's techniques
+against real transcripts — the fault blurbs and per-turn
 commentary in `src/blackbox.ts`, any rule in `src/rubric.ts` whose `ref`
 points at that section, and — for anything about untrusted input, permissions,
 credentials or isolation — the control blurbs and route stages in
-`src/range.ts`. The palette's search index derives from the bodies
-automatically and needs no maintenance.
+`src/range.ts`. When adding or reordering sections, remember the crew
+console's matrix columns and the syllabus's exercise placement both derive
+from the sections array (the roster stores ids and survives; the share-link
+payload needs its version bump as documented in `share.ts`). The palette's
+search index derives from the bodies automatically and needs no maintenance.

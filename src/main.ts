@@ -10,11 +10,15 @@ import { initBlackBox } from "./blackboxui";
 import { initBench } from "./bench";
 import { initRange } from "./rangeui";
 import { initArchitect } from "./architectui";
-import { readArchHash } from "./architect";
+import { readArchHash, missionFromAnswers, TRAITS, DEFAULT_ANSWERS } from "./architect";
 import { initCheckride, readWingsHash } from "./checkride";
+import { initCrew } from "./crewui";
+import { initSyllabus } from "./syllabusui";
 import { logActivity } from "./activity";
 import { graphById, renderFigure } from "./agentgraph";
 import { focusTokenMeter, mountTokenMeter } from "./tokenmeter";
+import { focusWindTunnel, mountWindTunnel } from "./windtunnelui";
+import { readLabHash } from "./labsim";
 import { buildShareUrl, readShareHash, clearShareHash } from "./share";
 
 const sections: Section[] = [...part1, ...sections2];
@@ -47,11 +51,15 @@ function saveLedger(ledger: Ledger): void {
 let ledger = loadLedger();
 
 // A share link carrying a teammate's progress? Read it once, before render.
-// Same for a wings certificate and an architect interview — the three hash
-// formats are mutually exclusive, so at most one of these is non-null.
+// Same for a wings certificate, an architect interview, and a ghost run —
+// the four hash formats are mutually exclusive, so at most one is non-null.
 const pendingShare = readShareHash(sections);
 const pendingWings = readWingsHash();
 const pendingArch = readArchHash();
+const pendingLab = readLabHash();
+// A #lab= hash that didn't decode is a link from a different version of the
+// option lists — tell the reader, never show a broken screen.
+const staleLab = !pendingLab && /^#lab=/.test(location.hash);
 
 // ---------------------------------------------------------------------------
 // Rendering
@@ -151,7 +159,7 @@ function render(): void {
           </div>
         </div>
         <ul class="nav-list">${navItems}</ul>
-        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · architect · pattern lab · black box · bench · range · checkride · progress travels by link</p>
+        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · architect · pattern lab · wind tunnel · black box · bench · range · checkride · crew console · syllabus · progress travels by link</p>
       </nav>
       <div class="main">
         <header class="gauge-bar" role="status" aria-live="polite">
@@ -165,6 +173,7 @@ function render(): void {
           <button class="bar-btn" id="btn-bench" type="button" title="The bench — review your own CLAUDE.md, prompt, or tool description">bench</button>
           <button class="bar-btn" id="btn-range" type="button" title="The range — spend a friction budget on controls, then find out which attacks your posture actually holds">range</button>
           <button class="bar-btn" id="btn-ride" type="button" title="The checkride — 15-question exam, pass mark 80%, shareable wings">checkride</button>
+          <button class="bar-btn" id="btn-crew" type="button" title="The crew console — paste teammates' share-links, read the team's coverage matrix">crew</button>
           <button class="bar-btn" id="btn-stats" type="button" title="Flight record — streaks, mastery, and review forecast">stats</button>
           <button class="bar-btn" id="btn-search" type="button" title="Search the guide (⌘K)">⌘K</button>
         </header>
@@ -214,6 +223,7 @@ function hydrateGraphs(): void {
 function hydrateWidgets(): void {
   app!.querySelectorAll<HTMLElement>("[data-widget]").forEach((slot) => {
     if (slot.dataset.widget === "token-meter") mountTokenMeter(slot);
+    else if (slot.dataset.widget === "wind-tunnel") mountWindTunnel(slot);
   });
 }
 
@@ -315,9 +325,29 @@ document.getElementById("btn-drill")?.addEventListener("click", () => drill.open
 
 // ---------------------------------------------------------------------------
 // Pattern lab — simulate an agent run against the guide's claims (see lab.ts).
+// A #lab= ghost-run link opens straight onto the configured run.
 // ---------------------------------------------------------------------------
-const lab = initLab(jumpTo);
+const lab = initLab(jumpTo, toast);
 document.getElementById("btn-lab")?.addEventListener("click", () => lab.open());
+
+if (pendingLab) {
+  clearShareHash();
+  if (pendingLab.arch) {
+    // Reconstruct the architect's mission from the trait digits the link
+    // carried — the same synthesis path an interview uses.
+    const answers = { ...DEFAULT_ANSWERS };
+    TRAITS.forEach((t, i) => {
+      answers[t.key] = Number(pendingLab.arch![i]);
+    });
+    lab.openWith(missionFromAnswers(answers), pendingLab.cfg, pendingLab.arch);
+  } else {
+    lab.openRun(pendingLab.cfg);
+  }
+  toast("a teammate's ghost run — same setup, same run, replayed locally");
+} else if (staleLab) {
+  clearShareHash();
+  toast("that run link predates the current lab — open the lab and rebuild the setup");
+}
 
 // ---------------------------------------------------------------------------
 // The black box — trajectory review over recorded runs (blackboxui.ts). The
@@ -369,9 +399,22 @@ wingsEl?.querySelectorAll<HTMLButtonElement>("[data-wings]").forEach((btn) => {
 });
 
 // ---------------------------------------------------------------------------
+// The crew console — team coverage aggregated from pasted share-links
+// (crewui.ts). Consumes the existing hash payloads; adds none of its own.
+// ---------------------------------------------------------------------------
+const crew = initCrew(sections, jumpTo, toast);
+document.getElementById("btn-crew")?.addEventListener("click", () => crew.open());
+
+// ---------------------------------------------------------------------------
+// The syllabus — a study plan from here to the checkride (syllabusui.ts).
+// Reached from the palette and from the flight record; no top-bar button.
+// ---------------------------------------------------------------------------
+const syllabus = initSyllabus(sections, questionBank, () => ledger, jumpTo, toast);
+
+// ---------------------------------------------------------------------------
 // Flight record — streaks, mastery, and review forecast (see stats.ts).
 // ---------------------------------------------------------------------------
-const stats = initStats(sections, questionBank, () => ledger);
+const stats = initStats(sections, questionBank, () => ledger, () => syllabus.open());
 document.getElementById("btn-stats")?.addEventListener("click", () => stats.open());
 
 // ---------------------------------------------------------------------------
@@ -436,6 +479,29 @@ const palette = initPalette(sections, [
     label: "Review an artifact on the bench",
     hint: "your CLAUDE.md, prompt, or tool description — line-anchored findings, stays on this device",
     run: () => bench.open(),
+  },
+  {
+    label: "Compare before/after in the hangar",
+    hint: "two versions of the same artifact — which findings your edit fixed, introduced, or left standing",
+    run: () => bench.openCompare(),
+  },
+  {
+    label: "Open the crew console",
+    hint: "paste teammates' share-links — coverage matrix, blind spots, exportable, no backend",
+    run: () => crew.open(),
+  },
+  {
+    label: "Plan a syllabus",
+    hint: "a day-by-day study plan to a target date — exportable as Markdown or .ics",
+    run: () => syllabus.open(),
+  },
+  {
+    label: "Replay a transcript in the wind tunnel",
+    hint: "paste a conversation — occupancy, the rot band, what each L2 strategy would have kept",
+    run: () => {
+      jumpTo("context");
+      focusWindTunnel();
+    },
   },
   {
     label: "Estimate a prompt's token cost",

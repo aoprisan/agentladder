@@ -94,8 +94,13 @@ export interface SharePayload {
   done: string[];
 }
 
-export function readShareHash(sections: Section[]): SharePayload | null {
-  const m = location.hash.match(/^#share=([1234])\.([0-9a-f]+)$/i);
+/**
+ * Decode a share hash from any string (a full URL, a bare `#share=…`). The
+ * crew console (crew.ts) feeds pasted teammate links through this so the bit
+ * order is decoded in exactly one place.
+ */
+export function decodeShareHash(hash: string, sections: Section[]): SharePayload | null {
+  const m = hash.match(/#share=([1234])\.([0-9a-f]+)/i);
   if (!m) return null;
   const bits = [...m[2]]
     .map((c) => parseInt(c, 16).toString(2).padStart(4, "0"))
@@ -104,6 +109,11 @@ export function readShareHash(sections: Section[]): SharePayload | null {
   const known = new Set(sections.map((s) => s.id));
   const done = order.filter((id, i) => bits[i] === "1" && known.has(id));
   return { done };
+}
+
+export function readShareHash(sections: Section[]): SharePayload | null {
+  if (!/^#share=/.test(location.hash)) return null;
+  return decodeShareHash(location.hash, sections);
 }
 
 export function clearShareHash(): void {

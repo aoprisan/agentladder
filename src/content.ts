@@ -103,6 +103,10 @@ export const sections: Section[] = [
 
 <h3>The filesystem as context architecture</h3>
 <p>A recurring theme in the Agent SDK guidance: <strong>folder and file structure is itself context engineering</strong>. An email agent that stores past conversations in a <code>conversations/</code> folder can search them on demand. Designing what the agent persists, where, and in what format is a first-class design decision.</p>
+
+<h3>See it happen: the wind tunnel</h3>
+<p>Everything above is a claim until it happens to a transcript you recognize. Paste one below and watch the window fill turn by turn — then apply each technique retroactively and see what it would have kept.</p>
+<div data-widget="wind-tunnel"></div>
 `,
     docs: [
       { label: "Effective Context Engineering for AI Agents", url: "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" },

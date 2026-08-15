@@ -186,7 +186,19 @@ export interface SimResult {
   recommended: { pattern: PatternId; context: "preload" | "jit"; compaction: boolean; quality: number; cost: number } | null;
 }
 
-const WINDOW_MAX = 200; // k tokens
+// The window model, shared with the wind tunnel (windtunnel.ts) so the widget
+// and the lab never disagree about when rot starts or compaction fires. The
+// shares are fractions of the window: rot begins above 40% occupancy,
+// compaction fires at 70% and summarizes down to 30%, overflow hits at 82.5%.
+export const WINDOW_MODEL = {
+  maxK: 200,
+  rotFloorShare: 0.4,
+  compactAtShare: 0.7,
+  compactToShare: 0.3,
+  overflowAtShare: 0.825,
+} as const;
+
+const WINDOW_MAX = WINDOW_MODEL.maxK; // k tokens
 
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
@@ -289,23 +301,25 @@ export function simulate(
   // pass (L2: attention is a finite budget).
   function rotTick(unitsProcessed: number): void {
     const pct = (window / WINDOW_MAX) * 100;
-    const over = Math.max(0, pct - 40);
+    const over = Math.max(0, pct - WINDOW_MODEL.rotFloorShare * 100);
     rot += unitsProcessed * over * 0.06 * (cfg.context === "preload" ? 1.5 : 1) * 0.01 * 10;
   }
 
   // Window pressure valve — called between chunks of main-window work.
   function pressure(): void {
-    if (window > 140 && cfg.compaction) {
+    const compactAt = WINDOW_MODEL.compactAtShare * WINDOW_MAX;
+    const compactTo = WINDOW_MODEL.compactToShare * WINDOW_MAX;
+    if (window > compactAt && cfg.compaction) {
       cost += 4;
       latency += 1.5;
       rot += 0.5;
-      window = 60;
+      window = compactTo;
       compactions += 1;
       emit(
         "good",
-        "compaction: trajectory summarized — decisions, current state, open items survive; the transcript doesn't (140k → 60k)",
+        `compaction: trajectory summarized — decisions, current state, open items survive; the transcript doesn't (${compactAt}k → ${compactTo}k)`,
       );
-    } else if (window > 165 && !cfg.compaction) {
+    } else if (window > WINDOW_MODEL.overflowAtShare * WINDOW_MAX && !cfg.compaction) {
       overflowed = true;
       if (m.verifiable > 0.6) {
         cost += 25;
@@ -679,4 +693,65 @@ export function simulate(
   }
 
   return { config: cfg, events, quality: Math.round(quality), cost: Math.round(cost), latency: Math.round(latency * 10) / 10, grades, verdict, findings, recommended };
+}
+
+// ---------------------------------------------------------------------------
+// Ghost runs — a lab configuration encoded into the URL hash, so a debrief
+// can travel to a teammate who opens the link and watches the *same
+// deterministic run* fly. Format:
+//
+//   #lab=1.<mission>.<pattern>.<context>.<compaction>.<tools>
+//
+// where <mission> is an index into MISSIONS — or "a" + the architect's eight
+// trait digits (0–2, TRAITS order) for a mission synthesized from an
+// interview — and the rest are indices into the option lists in this file.
+// The codec lives beside those lists because the positions ARE the payload:
+// same contract as share.ts's bit order — don't reorder or insert options
+// without bumping the version, and decode old versions against a frozen
+// order. The hash is untrusted input; every index is bounds-checked and no
+// hash-sourced string is ever rendered as HTML (the payload is digits).
+// ---------------------------------------------------------------------------
+
+const LAB_CONTEXTS: Array<LabConfig["context"]> = ["preload", "jit"];
+const LAB_TOOLS: Array<LabConfig["tools"]> = ["sprawl", "lean"];
+
+export interface LabShare {
+  cfg: LabConfig;
+  /** eight architect trait digits when the mission came from an interview */
+  arch?: string;
+}
+
+export function buildLabUrl(cfg: LabConfig, archDigits?: string): string {
+  const mission = archDigits
+    ? `a${archDigits}`
+    : String(MISSIONS.findIndex((m) => m.id === cfg.mission));
+  const parts = [
+    mission,
+    PATTERNS.findIndex((p) => p.id === cfg.pattern),
+    LAB_CONTEXTS.indexOf(cfg.context),
+    cfg.compaction ? 1 : 0,
+    LAB_TOOLS.indexOf(cfg.tools),
+  ];
+  const base = location.href.split("#")[0];
+  return `${base}#lab=1.${parts.join(".")}`;
+}
+
+export function readLabHash(): LabShare | null {
+  const m = location.hash.match(/^#lab=1\.(a[0-2]{8}|\d{1,2})\.(\d{1,2})\.([01])\.([01])\.([01])$/);
+  if (!m) return null;
+  const arch = m[1].startsWith("a") ? m[1].slice(1) : undefined;
+  const missionIdx = arch ? 0 : Number(m[1]);
+  const patternIdx = Number(m[2]);
+  if (!arch && missionIdx >= MISSIONS.length) return null;
+  if (patternIdx >= PATTERNS.length) return null;
+  const cfg: LabConfig = {
+    // With an architect mission the id is a placeholder — the caller passes
+    // the reconstructed mission as simulate()'s override, which ignores it.
+    mission: arch ? "brief" : MISSIONS[missionIdx].id,
+    pattern: PATTERNS[patternIdx].id,
+    context: LAB_CONTEXTS[Number(m[3])],
+    compaction: m[4] === "1",
+    tools: LAB_TOOLS[Number(m[5])],
+  };
+  return { cfg, arch };
 }
