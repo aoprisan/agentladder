@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A static, zero-runtime-dependency TypeScript site (Vite) that teaches teams
-agentic workflows with Claude, organized as levels L0–L8 plus a prompt-writing
+agentic workflows with Claude, organized as levels L0–L10 plus a prompt-writing
 section (PW), a toolbox (TB) and a sources/reference (REF) section. There is no backend; reading progress
 ("the ledger") and recall-drill scheduling are persisted per-device in
 `localStorage`, and progress can travel between people via share-links
@@ -34,7 +34,7 @@ Everything renders from typed data. The moving parts:
 
 - **`src/content.ts`** — defines the `Section` and `DocLink` interfaces, the
   `meta` object (title/subtitle/updated/disclaimer), and `sections` L0–L3.
-- **`src/content2.ts`** — `sections2`: prompt writing (PW), the toolbox, L4–L8,
+- **`src/content2.ts`** — `sections2`: prompt writing (PW), the toolbox, L4–L10,
   and sources. Imports the `Section` type from `content.ts`.
 - **`src/main.ts`** — concatenates `[...part1, ...sections2]` into one array,
   then renders the whole page by string-templating `innerHTML`. It owns ledger
@@ -71,9 +71,10 @@ Everything renders from typed data. The moving parts:
   edges, hand-laid coordinates) plus a string renderer, no DOM. `renderGraph`
   emits inline SVG styled entirely from `styles.css`; `renderFigure` wraps it
   with its caption; `mermaidFor` emits the same graph as a Mermaid flowchart
-  (the architect's brief carries one into the RFC). Twelve graphs: the seven
+  (the architect's brief carries one into the RFC). Fourteen graphs: the seven
   L1 patterns — **their ids are the `PatternId`s**, so `graphFor(pattern)`
-  works — plus `augmented`, `loop`, `research`, and `teams`. Node ids are the
+  works — plus `augmented`, `loop`, `loopeng`, `research`, `teams`, `trust`
+  and `defense`. Node ids are the
   run positions `labsim.ts` emits; if you rename one, rename it there too or
   the lab's live highlight silently stops moving. Section bodies mark a
   diagram with an empty `<div data-graph="…">` and `main.ts` hydrates it after
@@ -97,7 +98,7 @@ Everything renders from typed data. The moving parts:
   question per screen) → verdict → brief (copy/download). Last answers
   persist under `agentic-guide-architect-v1`; a `#arch=` hash opens straight
   onto the recomputed verdict.
-- **`src/checkride.ts`** — the certification exam: 12 questions sampled for
+- **`src/checkride.ts`** — the certification exam: 15 questions sampled for
   section coverage from `quiz.ts`, one pass, no feedback until the end, pass
   mark 80%. Deliberately does NOT touch SRS scheduling (it logs activity
   only). Passing builds a shareable wings link
@@ -198,7 +199,7 @@ Everything renders from typed data. The moving parts:
   Exports a Markdown threat model; nothing the reader chooses leaves the
   device.
 - **`src/share.ts`** — team share-links: the ledger's done-bits packed into a
-  hex payload in the URL hash (`#share=2.<hex>`, bit order = sections-array
+  hex payload in the URL hash (`#share=5.<hex>`, bit order = sections-array
   order, so **don't reorder or insert sections** without bumping the payload
   version). V1 links are still decoded against the frozen `V1_ORDER` list —
   when you bump the version, freeze the old order the same way rather than
@@ -235,7 +236,7 @@ content-free scoreboard under `agentic-guide-bench-v1` (`BENCH_KEY` in
 `agentic-guide-range-v1` (`RANGE_KEY` in `range.ts`). Changing any key resets everyone's saved state for that feature
 — they are deliberately independent stores.
 
-Three URL-hash payloads coexist and are mutually exclusive: `#share=2.…`
+Three URL-hash payloads coexist and are mutually exclusive: `#share=5.…`
 (ledger bits, `share.ts`), `#arch=1.…` (architect answers, `architect.ts`),
 `#wings=1.…` (checkride certificate, `checkride.ts`). All are read once at
 module init in `main.ts`; section bodies are trusted HTML but hash-sourced

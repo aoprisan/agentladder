@@ -5,7 +5,7 @@ export interface DocLink {
 
 export interface Section {
   id: string;
-  ordinal: string; // "L0" … "L7", "TB", "REF"
+  ordinal: string; // "L0" … "L10", "PW", "TB", "REF"
   title: string;
   tagline: string;
   body: string; // trusted HTML authored in this repo
@@ -45,6 +45,7 @@ export const sections: Section[] = [
 <div data-graph="augmented"></div>
 <p>An agent is an augmented LLM running <strong>in a loop</strong>: gather context → take action → verify the result → repeat until done. Every advanced technique in this guide is an elaboration of one of those four phases.</p>
 <div data-graph="loop"></div>
+<p>Hold on to that shape — the levels map onto it. L2 is the first phase, L3 the second, and L10 is the last two: what the check actually is, and what bounds the repeat.</p>
 
 <h3>When agents are the right choice</h3>
 <p>Use agents for open-ended problems where you can't predict the number of steps or hardcode a path, and where you have some trust in the model's decision-making. Autonomy means higher cost and the potential for compounding errors — so agents belong in <strong>sandboxed environments with guardrails and verification</strong>, especially early on.</p>

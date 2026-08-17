@@ -780,6 +780,78 @@ export const questionBank: QuizQuestion[] = [
       "Tool descriptions load at startup and the model reads them as instructions, so an integration bump is a prompt change. Anthropic reviews connectors against listing criteria before directory listing but does not security-audit MCP servers — pin versions and diff the descriptions on update.",
   },
 
+  // L10 — loop engineering ---------------------------------------------------
+  {
+    id: "loop-engineering-1",
+    sectionId: "loop-engineering",
+    prompt: "A loop that runs unattended needs three exits. Which one do most designs leave out?",
+    options: [
+      "Done — the verification passed",
+      "Exhausted — a budget ran out",
+      "Stuck — still burning budget, no longer converging",
+      "Cancelled — the operator interrupted it",
+    ],
+    answer: 2,
+    explain:
+      "Done is the exit everyone builds; a budget is at least easy to remember once you've paid for forgetting it. The stuck exit is the expensive omission, because a stalled loop looks exactly like a working one from outside — tokens moving, tools firing, turns accumulating.",
+  },
+  {
+    id: "loop-engineering-2",
+    sectionId: "loop-engineering",
+    prompt: "Ranking verifiers strongest to weakest, which is the <em>weakest</em>?",
+    options: [
+      "A test suite or an exit code",
+      "A linter or policy check over the artifact",
+      "A model judging against a rubric in a fresh context",
+      "The model checking its own output in the same context",
+    ],
+    answer: 3,
+    explain:
+      "Self-review in the producing context re-runs the reasoning that made the mistake — the errors that survived generation are exactly the ones that look correct to that context. It catches slips, not misunderstandings. The rule is to push the check outside the context that made the artifact.",
+  },
+  {
+    id: "loop-engineering-3",
+    sectionId: "loop-engineering",
+    prompt: "A tool call returns a real error — the file wasn't where the agent assumed. What should the loop do?",
+    options: [
+      "Retry the same call with exponential backoff",
+      "Go back to gather and change something before acting again",
+      "Retry immediately; tool errors are usually transient",
+      "Escalate to a human on the first failure",
+    ],
+    answer: 1,
+    explain:
+      "Backoff is for transient failures — timeouts, 503s, rate limits — where the plan was right and the world was briefly unavailable. A real error means the approach is wrong, and a retry that changes nothing about the attempt is not a retry, it's a repetition.",
+  },
+  {
+    id: "loop-engineering-4",
+    sectionId: "loop-engineering",
+    prompt: "The cheapest high-signal indicator that a run has stalled is…",
+    options: [
+      "the turn count passing a threshold",
+      "the same tool called with the same arguments twice",
+      "the context window approaching its limit",
+      "the model's own report that it is making progress",
+    ],
+    answer: 1,
+    explain:
+      "Hash the call — repetition is the highest-signal stall indicator and nearly free to detect. Turn count measures activity, not progress. The other trajectory signals are error recurrence, oscillating edits, and a verifier score that hasn't moved in three rounds.",
+  },
+  {
+    id: "loop-engineering-5",
+    sectionId: "loop-engineering",
+    prompt: "A run hits its step budget mid-task. What should happen?",
+    options: [
+      "Stop immediately — that's what the budget is for",
+      "Raise the budget once and continue",
+      "Write what it tried, ruled out and believes to a file, then stop",
+      "Hand the remaining turns to a subagent",
+    ],
+    answer: 2,
+    explain:
+      "Every budget needs a behaviour on exhaustion, and \"stop\" throws away everything the run learned. Writing state to a file makes exhaustion a handoff (L7) rather than a death — same limit, but the next session starts warm.",
+  },
+
   // REF — sources -----------------------------------------------------------
   {
     id: "sources-1",

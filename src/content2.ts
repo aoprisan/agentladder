@@ -252,7 +252,7 @@ for await (const msg of query({
 <ul>
 <li>Maintain an explicit <strong>feature/goal ledger</strong> (e.g., hundreds of testable feature statements initialized as "failing") that persists outside the context; each session picks up the ledger, works, updates statuses.</li>
 <li>Structured <strong>handoff artifacts</strong>: progress files, decision logs, "state of the world" summaries written for the <em>next</em> session's cold start.</li>
-<li>Verification gates between sessions so regressions are caught before compounding.</li>
+<li>Verification gates between sessions so regressions are caught before compounding. What those gates should be, and how a session decides it has stopped making progress, is L10.</li>
 </ul>
 
 <h3>Security and isolation</h3>
@@ -487,6 +487,86 @@ for await (const msg of query({
       { label: "Hooks reference", url: "https://code.claude.com/docs/en/hooks" },
       { label: "Development containers", url: "https://code.claude.com/docs/en/devcontainer" },
       { label: "Monitoring usage (OpenTelemetry)", url: "https://code.claude.com/docs/en/monitoring-usage" },
+    ],
+  },
+  {
+    id: "loop-engineering",
+    ordinal: "L10",
+    title: "Loop engineering",
+    tagline: "L2 engineers what goes into the window. This engineers the repeat — what closes the loop, what bounds it, and what happens when it won't converge.",
+    body: `
+<p>L0 makes a promise and then the guide spends ten sections elaborating three quarters of it. An agent is an augmented LLM running in a loop: <strong>gather context → take action → verify → repeat until done</strong>. Context engineering (L2) is the discipline of the first phase, tool design (L3) the second. This section is the discipline of the other two — the verification that decides whether to go round again, and the <em>repeat</em> itself.</p>
+<p>It gets its own level because it is where unattended agents actually fail. Not on a bad prompt or a missing tool: on a run that never decided it was finished, or decided it was finished when it wasn't. Those are the same defect seen from two sides — <strong>a loop is only as good as the condition that ends it</strong>.</p>
+
+<div data-graph="loopeng"></div>
+
+<h3>Three exits, not one</h3>
+<p>Every loop needs somewhere to go when the work succeeds. A loop that runs unattended needs two more:</p>
+<ol>
+<li><strong>Done</strong> — the verification passed. This is the only exit most people design.</li>
+<li><strong>Exhausted</strong> — a budget ran out. Steps, tool calls, tokens, wall-clock, money; pick the ones that bind for your deployment and set them explicitly, because the alternative is not "no limit", it's a limit discovered later by an invoice or a timeout.</li>
+<li><strong>Stuck</strong> — the run is still burning budget but has stopped converging. This is the exit almost nobody builds, and it is the one that costs the most, because a stalled loop looks exactly like a working loop from the outside: tokens moving, tools firing, turns accumulating.</li>
+</ol>
+<p class="callout"><strong>Every budget needs a behaviour on exhaustion, and "stop" is usually the wrong one.</strong> A run that dies at its step limit throws away everything it learned. A run that writes its state — what it tried, what it ruled out, what it believes is true — to a file and <em>then</em> stops is a handoff (L7), and the next session starts warm. Same limit; the difference is whether the budget bought you anything.</p>
+
+<h3>Verification is the load-bearing phase</h3>
+<p>The verify step is what makes it a loop rather than a sequence, and not all verifiers are worth the same. Roughly, strongest first:</p>
+<ol>
+<li><strong>Deterministic checks</strong> — the compiler, the test suite, an exit code, a schema validation, a diff that must apply. Code, not a model. These are cheap, they don't negotiate, and they fail for reasons you can read.</li>
+<li><strong>Rules over the artifact</strong> — a linter, a policy check, a regex for the thing that must never ship. Weaker than a test, still not an opinion.</li>
+<li><strong>A model judging in a fresh context</strong> — LLM-as-judge against an explicit rubric (L7). Genuinely useful for things no test can express: is the citation supported, is the tone right, did it answer the question asked.</li>
+<li><strong>The model judging its own output in the same context</strong> — nearly free and nearly worthless. The errors that survived generation are exactly the ones that look correct to that context; asking it to check its work re-runs the reasoning that produced the mistake. It catches typos and slips, not misunderstandings.</li>
+</ol>
+<p>The practical rule: <strong>push the check outside the context that made the artifact.</strong> A fresh window, a different model, or — best — a process that isn't a model at all. When the guide says agents belong in environments with verification, this is the thing it means; "verify your work" in a system prompt is an aspiration, <code>npm test</code> is a gate.</p>
+<p>The corollary matters as much: <strong>if you can't state the check, you don't have a loop</strong>, you have an open-ended generation with a stopping heuristic. That is a legitimate thing to build — but budget it like one, and don't expect autonomy to improve the result.</p>
+
+<h3>Progress is not activity</h3>
+<p>The stuck exit needs a signal, and turn count isn't one. What distinguishes a converging run from a thrashing one shows up in the trajectory:</p>
+<ul>
+<li><strong>Repetition</strong> — the same tool called with the same arguments twice. The single highest-signal stall indicator there is, and the cheapest to detect: hash the call.</li>
+<li><strong>Error recurrence</strong> — the same failure text coming back after an attempted fix. Two identical errors is bad luck; three is a wrong model of the problem, and more turns won't fix a wrong model.</li>
+<li><strong>Oscillation</strong> — edits that revert each other, a file that returns to a previous state, a plan that alternates between two approaches. The run is exploring a cycle, not a path.</li>
+<li><strong>A flat verifier</strong> — the test count, the score, the number of remaining failures unchanged across iterations. If the thing you're optimising hasn't moved in three rounds, it isn't going to on the fourth without a change of approach.</li>
+</ul>
+<p>Cheap and effective: keep a small trajectory summary the agent itself must update each round — attempt, result, what it now believes. It's structured note-taking (L2) pointed at the loop rather than at the task, and it makes stalls legible to the agent, not just to your monitoring.</p>
+
+<h3>Retry, re-plan, escalate</h3>
+<p>"Retry" hides two different situations and conflating them is how loops burn budget politely:</p>
+<ul>
+<li><strong>Transient failure</strong> — a timeout, a 503, a rate limit, a lock. The plan was right and the world was briefly unavailable. Retry the same call with exponential backoff and a cap. This is the only case where repeating yourself is correct.</li>
+<li><strong>Wrong approach</strong> — the tool returned a real error, the test failed on logic, the file wasn't where it was assumed to be. Retrying is a bug: <strong>a retry that changes nothing about the attempt is not a retry, it's a repetition</strong>. This case needs a re-plan — go back to gather, get the missing fact, and change something before acting again.</li>
+</ul>
+<p>Two things that fall out of this. Retries are not free when the action has side effects: re-running a POST, a payment, an email or a <code>git push</code> is a second event in the world, so either the tool is idempotent (L3 — say so in its description) or the loop must know not to repeat it. And escalation is a design decision, not a failure: an <code>AskUserQuestion</code> at the point of genuine ambiguity costs one interruption, where guessing costs the whole run and everything downstream of the guess.</p>
+
+<h3>You don't always own the loop</h3>
+<p>Where the loop lives changes which levers you have, not the anatomy:</p>
+<table>
+<thead><tr><th>Where</th><th>Who runs the loop</th><th>Your levers</th></tr></thead>
+<tbody>
+<tr><td><strong>Claude Code</strong> (L4)</td><td>The harness</td><td>The verification command in <code>CLAUDE.md</code>, hooks (test-on-stop is a verifier), the explore→plan→code→verify habit, <code>/clear</code> as a manual budget reset</td></tr>
+<tr><td><strong>Agent SDK</strong> (L6)</td><td>Inside <code>query()</code></td><td>Turn limits, permission callbacks, hooks, the tools you expose, what the system prompt calls "done"</td></tr>
+<tr><td><strong>Raw API</strong></td><td>You, in a <code>while</code></td><td>All of it — and all of it is now yours to get wrong</td></tr>
+<tr><td><strong>Multi-agent</strong> (L5)</td><td>One loop per agent, plus the orchestrator's</td><td>Every budget multiplies; a worker with no stop condition is a leak the lead can't see</td></tr>
+</tbody>
+</table>
+<p>The last row is the one worth sitting with. Loop bugs compose badly: L5's ~15× token cost assumes the workers terminate. A single stalled subagent inside a fan-out is a run that produces nothing and reports nothing, because the orchestrator is waiting on a report that isn't coming.</p>
+
+<h3>The short version</h3>
+<ul>
+<li>Name the check before you build the loop. If you can't, you don't have one.</li>
+<li>Put the check outside the context that produced the work.</li>
+<li>Set every budget explicitly, and decide what happens when each one runs out.</li>
+<li>Detect stalls by repetition and flat verifiers, not by turn count.</li>
+<li>Retry transient failures; re-plan real ones; escalate ambiguity early and cheaply.</li>
+<li>Make exhaustion a handoff, not a death.</li>
+</ul>
+<p class="callout"><strong>Where to practise this:</strong> the black box (in the bar above) is loop engineering read backwards — four real runs that went wrong, several of them on exactly these faults. Calling <em>unbounded loop</em> and <em>no verification</em> on the right turn is the same skill as designing the exit in the first place, minus the sunk cost.</p>
+`,
+    docs: [
+      { label: "Building Effective Agents (the loop, and when to pay for it)", url: "https://www.anthropic.com/engineering/building-effective-agents" },
+      { label: "Effective Harnesses for Long-Running Agents", url: "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents" },
+      { label: "Claude Agent SDK — the loop as a library", url: "https://code.claude.com/docs/en/agent-sdk/overview" },
+      { label: "Hooks reference — verification the model can't skip", url: "https://code.claude.com/docs/en/hooks" },
     ],
   },
   {
