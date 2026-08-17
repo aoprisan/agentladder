@@ -60,7 +60,7 @@ export const FAULTS: Fault[] = [
     name: "no verification",
     blurb:
       "Declared work finished without running the check that would have proved it. No feedback loop closed.",
-    ref: "mental-model",
+    ref: "loop-engineering",
   },
   {
     id: "silent-assumption",
@@ -95,7 +95,7 @@ export const FAULTS: Fault[] = [
     name: "unbounded loop",
     blurb:
       "No retry budget, no stopping condition. The run kept going long after it stopped making progress.",
-    ref: "production",
+    ref: "loop-engineering",
   },
   {
     id: "no-guardrail",

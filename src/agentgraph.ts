@@ -124,6 +124,30 @@ export const GRAPHS: AgentGraph[] = [
     ],
   },
   {
+    id: "loopeng",
+    title: "The loop, instrumented",
+    caption:
+      "The same four phases, wired for a run nobody is watching. Two things separate this from the picture above: the check is something other than the model's own opinion, and there is a third way out. A loop with only one exit is the unbounded-loop fault — it does not stop when it stops making progress, it stops when the money does.",
+    nodes: [
+      n("in", 52, 50, "io", "objective", undefined, 88),
+      n("gather", 198, 50, "model", "gather context", undefined, 124),
+      n("act", 350, 50, "model", "take action", "tools · code · APIs", 124),
+      n("check", 500, 50, "gate", "verify", "code, not vibes", 124),
+      n("out", 660, 50, "io", "done", undefined, 82),
+      n("budget", 350, 176, "gate", "budget check", "steps · tokens · clock", 150),
+      n("stop", 560, 176, "io", "hand off", "state file · human", 132),
+    ],
+    edges: [
+      e("in", "gather"),
+      e("gather", "act"),
+      e("act", "check"),
+      e("check", "out", "flow", "passes"),
+      e("check", "budget", "flow", "fails", undefined, "v"),
+      e("budget", "stop", "flow", "exhausted", undefined, "h"),
+      e("budget", "gather", "back", "budget left → re-plan"),
+    ],
+  },
+  {
     id: "single",
     title: "Single augmented call",
     caption:

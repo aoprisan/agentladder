@@ -499,7 +499,7 @@ const RULES: Rule[] = [
           detail:
             "No test, typecheck, lint, or build is named. The single highest-leverage thing this file can carry is the sentence that tells an agent how to find out whether it succeeded — without it, every run ends on self-report, which is the failure mode behind most of the incidents in the black box.",
           fix: "Name the gate explicitly: \"`npm run build` runs tsc then vite build — the typecheck is the gate. Run it before claiming a change works.\"",
-          ref: "mental-model",
+          ref: "loop-engineering",
         },
       ];
     },
@@ -650,7 +650,7 @@ const RULES: Rule[] = [
           detail:
             "The prompt says what to do but never says how the agent knows it worked. Without a criterion the run terminates on the model's own sense of completion, which is the single most reliable predictor of a confident wrong answer.",
           fix: "State the check: \"Done when `npm test` passes and the new case is covered.\" If the task genuinely has no mechanical check, say what a human will look at.",
-          ref: "mental-model",
+          ref: "loop-engineering",
         },
       ];
     },
@@ -704,7 +704,7 @@ const RULES: Rule[] = [
           detail:
             "Nothing tells the agent what to do when it stops making progress. The default behaviour is to keep trying — more searches, more hypotheses, more tokens — long past the point where a human would have come back and asked a question.",
           fix: "Give it a ceiling and an exit: \"If two approaches fail, stop and report what you tried rather than trying a third.\"",
-          ref: "production",
+          ref: "loop-engineering",
         },
       ];
     },

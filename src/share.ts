@@ -2,10 +2,10 @@
 // Team share-links — the ledger encoded into the URL hash, so progress can
 // move between people and devices with no backend. Format:
 //
-//   #share=4.<hex>
+//   #share=5.<hex>
 //
 // where <hex> is the sections' done-bits (in sections-array order) packed
-// four to a hex digit, and "4" is the payload version. A lead can mark the
+// four to a hex digit, and "5" is the payload version. A lead can mark the
 // sections that matter and send one link; a teammate opening it gets an
 // import banner (merge / replace / ignore). Unknown trailing bits are
 // ignored, so links survive sections being added at the end.
@@ -14,16 +14,18 @@
 // bit at index i means a different section than it used to. Every superseded
 // order is frozen below and still decoded — v1 (ten sections, before the
 // prompt-formats section landed between L3 and TB), v2 (eleven, before the
-// adversarial section landed between L7 and the sources) and v3 (twelve,
-// before the hardening section landed between L8 and the sources). A link a
-// teammate sent last week should not silently mark the wrong sections done.
+// adversarial section landed between L7 and the sources), v3 (twelve, before
+// the hardening section landed between L8 and the sources) and v4 (thirteen,
+// before the loop-engineering section landed between L9 and the sources). A
+// link a teammate sent last week should not silently mark the wrong sections
+// done.
 // ---------------------------------------------------------------------------
 
 import type { Section } from "./content";
 
 type Ledger = Record<string, boolean>;
 
-const VERSION = 4;
+const VERSION = 5;
 
 /** The v1 sections order, frozen. Only used to decode old links. */
 const V1_ORDER = [
@@ -73,10 +75,29 @@ const V3_ORDER = [
   "sources",
 ];
 
+/** The v4 order, frozen — before the loop-engineering section landed between
+ *  L9 and the sources. Same contract as the orders above. */
+const V4_ORDER = [
+  "mental-model",
+  "patterns",
+  "context",
+  "tool-design",
+  "prompt-formats",
+  "toolbox",
+  "claude-code",
+  "multi-agent",
+  "agent-sdk",
+  "production",
+  "adversarial",
+  "hardening",
+  "sources",
+];
+
 const FROZEN: Record<string, string[]> = {
   "1": V1_ORDER,
   "2": V2_ORDER,
   "3": V3_ORDER,
+  "4": V4_ORDER,
 };
 
 export function buildShareUrl(sections: Section[], ledger: Ledger): string {
@@ -95,7 +116,7 @@ export interface SharePayload {
 }
 
 export function readShareHash(sections: Section[]): SharePayload | null {
-  const m = location.hash.match(/^#share=([1234])\.([0-9a-f]+)$/i);
+  const m = location.hash.match(/^#share=([12345])\.([0-9a-f]+)$/i);
   if (!m) return null;
   const bits = [...m[2]]
     .map((c) => parseInt(c, 16).toString(2).padStart(4, "0"))
