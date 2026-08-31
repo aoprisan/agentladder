@@ -23,7 +23,7 @@ export const sections2: Section[] = [
 <tr><td><strong>Markdown</strong></td><td>Instruction documents: <code>CLAUDE.md</code>, <code>SKILL.md</code>, system prompts, anything a human also maintains.</td><td>Almost free, and it is the native register of the material these models were trained on. Weak at nesting: a Markdown list inside a pasted Markdown document has no visible seam.</td></tr>
 <tr><td><strong>XML tags</strong></td><td>Long or mixed context — a document plus a spec plus examples — and anywhere you need to refer to a region by name. Anthropic's long-standing recommendation for Claude.</td><td>You pay for the tag twice, opening and closing. Worth it when there is something to delimit; pure overhead when there isn't.</td></tr>
 <tr><td><strong>JSON</strong></td><td><em>Output</em> a machine will consume — and even then, prefer the mechanisms built for it: structured outputs (<code>output_config.format</code>) or a tool's input schema, which constrain the shape instead of asking politely.</td><td>Expensive as <em>input</em>: braces, quotes, colons and commas are all tokens, and escaping makes any embedded code or prose harder for both of you to read.</td></tr>
-<tr><td><strong>HTML</strong></td><td>Essentially never, as something you author.</td><td>You mostly <em>receive</em> it — fetched pages, scraped docs. Tag soup is a large token multiplier carrying almost no signal; convert to Markdown or text before it enters the context, and treat the content as untrusted data either way (L7).</td></tr>
+<tr><td><strong>HTML</strong></td><td>Essentially never, as something you author.</td><td>You mostly <em>receive</em> it — fetched pages, scraped docs. Tag soup is a large token multiplier carrying almost no signal; convert to Markdown or text before it enters the context, and treat the content as untrusted data either way (L8).</td></tr>
 <tr><td><strong>YAML / TOML</strong></td><td>Metadata and configuration — skill frontmatter, agent definitions.</td><td>Terse and readable, but whitespace-significant: a bad place to embed free-form text that might contain a colon.</td></tr>
 <tr><td><strong>CSV / TSV</strong></td><td>Tabular data, especially many rows.</td><td>Dramatically cheaper than the same rows as JSON objects — the field names are paid for once in the header instead of once per row.</td></tr>
 </tbody>
@@ -35,7 +35,7 @@ export const sections2: Section[] = [
 <li><strong>Name tags for what they contain</strong> — <code>&lt;transcript&gt;</code>, <code>&lt;style_guide&gt;</code>, <code>&lt;acceptance_criteria&gt;</code> — and reuse the same names in the instruction. A tag you never refer to is a comment.</li>
 <li><strong>Long input first, the question last.</strong> With a long document in context, put the document above the instructions and keep the actual ask at the end; Anthropic's long-context guidance is explicit about that ordering.</li>
 <li><strong>Examples are the highest-value tokens in the prompt.</strong> Two or three worked examples in the format you want back will beat a paragraph describing that format, every time. If you find yourself writing rules about output shape, you probably wanted an example — or a schema.</li>
-<li><strong>Data you delimit can contain your delimiter.</strong> Pasted content with a stray <code>&lt;/document&gt;</code> in it will close your tag early — and if that content came from the web or an issue tracker, that is a prompt-injection surface, not just a formatting bug (L7).</li>
+<li><strong>Data you delimit can contain your delimiter.</strong> Pasted content with a stray <code>&lt;/document&gt;</code> in it will close your tag early — and if that content came from the web or an issue tracker, that is a prompt-injection surface, not just a formatting bug (L8).</li>
 <li><strong>Reformatting is not free even when it's cheap.</strong> A prompt-cache hit is a byte-exact prefix match, so re-indenting or re-wrapping your standing context invalidates the cache for everything after the edit. Settle the format, then leave it alone.</li>
 </ul>
 
@@ -78,7 +78,7 @@ export const sections2: Section[] = [
 <tr><td><code>Bash</code></td><td>Run shell commands</td><td>Supports <code>run_in_background</code> for long jobs; the workhorse</td></tr>
 <tr><td><code>Read</code> / <code>Write</code> / <code>Edit</code></td><td>File I/O and surgical string-replace edits</td><td>Edits are diff-reviewable in the UI</td></tr>
 <tr><td><code>Glob</code> / <code>Grep</code></td><td>Find files by pattern, search content (ripgrep)</td><td>Cheap discovery — pairs with just-in-time retrieval (L2)</td></tr>
-<tr><td><code>WebSearch</code> / <code>WebFetch</code></td><td>Search the web, fetch and read pages</td><td>Treat fetched content as untrusted data (see L7)</td></tr>
+<tr><td><code>WebSearch</code> / <code>WebFetch</code></td><td>Search the web, fetch and read pages</td><td>Treat fetched content as untrusted data (see L8)</td></tr>
 <tr><td><code>Task</code></td><td>Spawn a subagent in its own context window</td><td>The multi-agent primitive (L4.4, L5)</td></tr>
 <tr><td><code>TodoWrite</code></td><td>Maintain a visible task checklist</td><td>Structured note-taking made native</td></tr>
 <tr><td><code>AskUserQuestion</code></td><td>Ask you a structured question mid-run</td><td>Human-in-the-loop checkpoint</td></tr>
@@ -91,7 +91,7 @@ export const sections2: Section[] = [
 <ul>
 <li><strong>Web search</strong> — server-side search with citations.</li>
 <li><strong>Code execution</strong> — a sandboxed Python environment for analysis and file generation.</li>
-<li><strong>Computer use</strong> — screenshot + mouse/keyboard control of a desktop for UI automation.</li>
+<li><strong>Computer use</strong> — screenshot + mouse/keyboard control of a desktop for UI automation (server-hosted, or self-hosted where you run the desktop).</li>
 <li><strong>Text editor &amp; bash tools</strong> — Anthropic-defined tool schemas Claude is specifically trained on; you supply the execution.</li>
 <li><strong>Files API</strong> — upload once, reference across requests.</li>
 <li><strong>MCP connector</strong> — call remote MCP servers directly from an API request, without running your own client.</li>
@@ -101,12 +101,24 @@ export const sections2: Section[] = [
 <p>The <strong>Model Context Protocol</strong> is the open standard for connecting agents to external systems: an MCP server exposes tools, resources, and prompts; any MCP client (Claude Code, Claude.ai, the Agent SDK, many third-party agents) can use them. Official SDKs exist for TypeScript, Python, Rust, and more.</p>
 <p>Servers your team will most likely reach for: GitHub (issues/PRs/CI), Playwright or Puppeteer (browser control for UI verification), Sentry, Postgres/SQLite, filesystem, Slack, Google Drive. Register with <code>claude mcp add</code>, scope config per-project via <code>.mcp.json</code>, and keep the set small — every connected server's tool descriptions consume context on every turn (L2 applies to tools too).</p>
 <p class="callout"><strong>Rule of thumb for choosing:</strong> bash + file tools for anything local and scriptable; MCP for external systems with auth, state, or APIs that bash can't cleanly reach; custom API tools only when you're building your own agent and need tight control over the surface.</p>
+
+<h3>The economics — paying for tokens once instead of every turn</h3>
+<p>Prices rot faster than anything else on this page, so what follows is the mechanics — check the pricing page for today's numbers. The mechanics are stable, and they are where the real savings live:</p>
+<ul>
+<li><strong>Prompt caching.</strong> A cache hit is a byte-exact prefix match (PW). Reads bill at roughly a <em>tenth</em> of fresh input; writes carry a premium (~1.25× for the default 5-minute lifetime, ~2× for the 1-hour option) — so caching pays when a prefix is actually reused and costs extra when it isn't. Keep the stable parts (system prompt, tool definitions) first and byte-identical, the volatile parts last, and verify with <code>cache_read_input_tokens</code> in the response: zero across identical requests means something is quietly changing per request.</li>
+<li><strong>Batching.</strong> Anything that can wait — nightly evals (L11), backfills, bulk classification — runs asynchronously at <strong>half price</strong> through the batch endpoint.</li>
+<li><strong>Tiering and effort.</strong> Pin cheap, fast models on discovery subagents and the frontier model on synthesis (L4.4). On current models the <em>effort</em> control is the first lever to try: turning effort down on a strong model often beats switching to a weaker one, and it keeps one cache namespace where a model cascade forfeits cache reuse.</li>
+<li><strong>Judge cost per completed task, not per request.</strong> A cheaper call that needs more turns, retries, or human clean-up is not cheaper. Same lesson as the L5 numbers: spend is only meaningful next to what it bought.</li>
+</ul>
 `,
     docs: [
       { label: "Tool use overview (API docs)", url: "https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview" },
       { label: "MCP in Claude Code (official docs)", url: "https://code.claude.com/docs/en/mcp" },
       { label: "Model Context Protocol — spec & SDKs", url: "https://modelcontextprotocol.io" },
       { label: "MCP servers — reference implementations", url: "https://github.com/modelcontextprotocol/servers" },
+      { label: "Pricing (Claude docs)", url: "https://docs.claude.com/en/docs/about-claude/pricing" },
+      { label: "Prompt caching", url: "https://docs.claude.com/en/docs/build-with-claude/prompt-caching" },
+      { label: "Batch processing", url: "https://docs.claude.com/en/docs/build-with-claude/batch-processing" },
     ],
   },
   {
@@ -136,10 +148,11 @@ export const sections2: Section[] = [
 <ul>
 <li><strong>Fork for breadth, stay inline for depth</strong>: delegate scanning, discovery, research, review — work that produces a summary. Keep reasoning-heavy sequential work in the main thread where you can steer it.</li>
 <li>Pin models per subagent: a cheap, fast model for discovery sweeps, the frontier model for synthesis — much of your cost control lives here.</li>
-<li>As of mid-2026, subagents <strong>nest</strong> (subagents spawning subagents, several levels deep), and <code>/usage</code> attributes cost per skill, subagent, and MCP server.</li>
+<li>Subagents <strong>nest</strong> — subagents spawning subagents, up to three layers below the main conversation by default — so a discovery sweep can fan out sweeps of its own. Every layer multiplies tokens (L5), so keep an eye on where the spend lands.</li>
 </ul>
 
 <h3>4.5 Choosing between the primitives</h3>
+<div data-graph="layers"></div>
 <table>
 <thead><tr><th>Need</th><th>Primitive</th></tr></thead>
 <tbody>
@@ -198,7 +211,7 @@ export const sections2: Section[] = [
 </ul>
 
 <h3>Agent teams (2026)</h3>
-<p>In February 2026 Claude Code shipped <strong>agent teams</strong> (research preview): one session acts as team lead; teammates run independently, each in its own context window and Git worktree — and unlike subagents, teammates <strong>communicate with each other directly</strong> (messaging, broadcasting, plan approval), not just report to a parent. Good for parallel research and review where teammates challenge each other's findings, and for features where each teammate owns a distinct component. Costs: real coordination overhead and token usage — same rule as always: use it when the task actually decomposes.</p>
+<p>In February 2026 Claude Code shipped <strong>agent teams</strong> — still experimental and disabled by default; an environment variable turns them on. One session acts as team lead; teammates run independently, each in its own context window and Git worktree — and unlike subagents, teammates <strong>communicate with each other directly</strong> (messaging, broadcasting, plan approval), not just report to a parent. Good for parallel research and review where teammates challenge each other's findings, and for features where each teammate owns a distinct component. Costs: real coordination overhead and token usage — same rule as always: use it when the task actually decomposes.</p>
 <div data-graph="teams"></div>
 <p>The two diagrams differ in one edge: subagents only report upward, teammates also talk sideways. That single edge is what buys you review that argues back — and what buys you a coordination bill.</p>
 <p>The community pattern that agent teams formalize — parallel Claude Code sessions in Git worktrees on independent tasks — remains useful on its own and is the cheapest entry into multi-agent work.</p>
@@ -270,6 +283,7 @@ for await (const msg of query({
 <li>Judge end states, not turn-by-turn scripts — allow different valid paths to the outcome.</li>
 <li>Track per-agent and per-tool token cost; in multi-agent setups, cost attribution is the difference between a tunable system and a mystery bill.</li>
 </ul>
+<p>That is the sketch; evals as a discipline — the set, the judge, the regression gate — is L11.</p>
 
 <h3>Adoption ladder for a team</h3>
 <ol>
@@ -570,6 +584,51 @@ for await (const msg of query({
     ],
   },
   {
+    id: "evals",
+    ordinal: "L11",
+    title: "Evals — proving it works",
+    tagline: "L10 puts a verifier inside the loop. This puts one around the whole system — so a prompt edit can't quietly cost you what a bad merge would.",
+    body: `
+<p>Everything before this point changes the system: a tighter prompt (PW), a leaner context (L2), a better tool description (L3), a different architecture (L1, L5). L5 delivered the warning that comes with that power — <strong>small changes cascade</strong>, and a minor prompt edit can produce a large behavioral shift. An eval is the instrument that notices. Without one, every improvement is a claim; with one, it is a measurement — and the difference between those two is the difference between engineering and vibes.</p>
+<p>The good news is the price of entry: Anthropic's guidance is to start with roughly <strong>twenty realistic tasks</strong>, because in agentic systems small samples reveal large effects. You do not need an eval platform to start. You need twenty tasks, a way to score them, and the discipline to run them before you ship a change.</p>
+
+<h3>The eval set</h3>
+<ul>
+<li><strong>Draw tasks from reality, not imagination.</strong> Real transcripts, real tickets, real inputs — synthetic tasks measure the system you imagined, and the gap between the two is exactly where failures live.</li>
+<li><strong>Every incident becomes a task.</strong> The run that went wrong last week is the most valuable eval you own: it is a failure you <em>know</em> the system can produce. That is a regression test, and it is how the set grows teeth over time.</li>
+<li><strong>Grade end states, not scripts.</strong> Judge whether the outcome is right — the bug fixed, the answer supported, the file in the right shape — and let different valid paths reach it (L7). An eval that requires one exact tool sequence fails every improvement.</li>
+<li><strong>Pin everything you aren't testing.</strong> Model id, prompts, tool set, fixtures. A moved number means something only when one thing moved.</li>
+</ul>
+
+<h3>The graders, strongest first</h3>
+<p>The verifier hierarchy from L10 applies unchanged — it just runs over a whole eval set instead of one loop:</p>
+<ol>
+<li><strong>Programmatic checks</strong> — the diff applies, the tests pass, the schema validates, the answer string matches. Cheap, non-negotiable, and where every eval should start.</li>
+<li><strong>LLM-as-judge with a rubric, in a fresh context</strong> — for what no test can express: is the citation supported, is the tone right, did it answer the question asked. Ask for <em>per-criterion verdicts</em> (accuracy, completeness, citation quality, tool efficiency — L7's rubric), never a single 1–10: one number is where regressions hide.</li>
+<li><strong>Human transcript review</strong> — reserved for the failure modes rubrics miss. Sample it; don't try to scale it.</li>
+</ol>
+<p class="callout"><strong>Calibrate the judge before you trust it.</strong> Run it over transcripts humans have already graded and measure the agreement; re-check whenever the judge's model or rubric changes. An uncalibrated judge is an opinion with a spreadsheet — and it drifts, silently, every time the model behind it moves.</p>
+
+<h3>Reading the number</h3>
+<ul>
+<li><strong>Run each task more than once.</strong> Agents are nondeterministic: a 70% pass rate might be seven tasks that always pass, or ten that each flake — and those are different problems with different fixes. Variance per task is the diagnosis; the aggregate is just the symptom.</li>
+<li><strong>Track cost and latency beside quality.</strong> L5's lesson was that token spend explains most of the performance gain — so a quality win is only a win at a price you'd pay again. A scoreboard without a cost column optimizes one axis and silently bills you on the other two.</li>
+<li><strong>Read the transcripts.</strong> The score tells you <em>that</em>; only the transcript tells you <em>why</em>. The same trick that works for tools (L3) works here: have the model itself classify failure modes across the transcripts and propose fixes — grading agents with agents is exactly the workflow these systems are good at.</li>
+</ul>
+
+<h3>The regression gate</h3>
+<p>An eval you run when you remember is a demo. The end state is the eval as a <strong>merge gate</strong>: headless (<code>claude -p</code>) or through the SDK in CI, triggered by changes to the things the guide keeps telling you to iterate on — prompts, tool descriptions, <code>CLAUDE.md</code>, model version. L9 argued those files are executable and should be reviewed as source; this is the other half: <strong>they can regress, so they get tests</strong>. A red eval blocks a prompt merge for the same reason a red test blocks a code merge.</p>
+<p>One discipline the gate needs: <strong>hold out a subset you never tune against.</strong> Iterate freely against the working set — but if every task has been used to fix a failure, the set has been trained on, and the number it produces is a memory, not a measurement.</p>
+<p class="callout"><strong>You have been inside one all along.</strong> This guide is built as an eval: the drill is a per-item verifier on a schedule, the checkride is a held-out sample with a pass mark it never lets you tune against, and the flight record is the dashboard. Steal the design — it is the same one your agents need.</p>
+`,
+    docs: [
+      { label: "Define your success criteria (Claude docs)", url: "https://docs.claude.com/en/docs/test-and-evaluate/define-success" },
+      { label: "Create strong empirical evals (Claude docs)", url: "https://docs.claude.com/en/docs/test-and-evaluate/develop-tests" },
+      { label: "Building Effective Agents (evaluation guidance)", url: "https://www.anthropic.com/engineering/building-effective-agents" },
+      { label: "How We Built Our Multi-Agent Research System (eval findings)", url: "https://www.anthropic.com/engineering/multi-agent-research-system" },
+    ],
+  },
+  {
     id: "sources",
     ordinal: "REF",
     title: "Primary sources",
@@ -592,6 +651,8 @@ for await (const msg of query({
 <li><a href="https://code.claude.com/docs/en/agent-sdk/overview" target="_blank" rel="noopener">Claude Agent SDK</a></li>
 <li><a href="https://docs.claude.com/en/api/overview" target="_blank" rel="noopener">Claude API</a> · <a href="https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview" target="_blank" rel="noopener">tool use</a> · <a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">prompt engineering</a></li>
 <li><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> · <a href="https://github.com/modelcontextprotocol/servers" target="_blank" rel="noopener">reference servers</a></li>
+<li><a href="https://code.claude.com/docs/en/security" target="_blank" rel="noopener">Security</a> · <a href="https://code.claude.com/docs/en/permissions" target="_blank" rel="noopener">permissions</a> · <a href="https://code.claude.com/docs/en/sandboxing" target="_blank" rel="noopener">sandboxing</a> — the reading behind L8–L9</li>
+<li><a href="https://docs.claude.com/en/docs/test-and-evaluate/define-success" target="_blank" rel="noopener">Define success criteria</a> · <a href="https://docs.claude.com/en/docs/test-and-evaluate/develop-tests" target="_blank" rel="noopener">empirical evals</a> — the reading behind L11</li>
 <li><a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">anthropics/skills</a> · <a href="https://github.com/anthropics/anthropic-cookbook" target="_blank" rel="noopener">anthropic-cookbook</a> · <a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener">anthropics/claude-code</a></li>
 </ul>
 

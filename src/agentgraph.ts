@@ -397,6 +397,51 @@ export const GRAPHS: AgentGraph[] = [
       e("hook", "log", "link", "observes", undefined, "h"),
     ],
   },
+  {
+    id: "funnel",
+    title: "The context funnel",
+    caption:
+      "Attention is a finite budget and everything on the left wants a share of it. The middle box is L2's whole discipline — retrieve just in time, compact what went stale, push exploration into another window — so what reaches the model is the smallest set of high-signal tokens. The two-way edge at the bottom is structured note-taking: state written outside the window is state the window doesn't have to carry.",
+    nodes: [
+      n("files", 70, 60, "tool", "the repo", "files · search", 122),
+      n("toolout", 70, 166, "tool", "tool results", "logs · pages · diffs", 122),
+      n("hist", 70, 272, "store", "history", "the turns so far", 122),
+      n("cur", 292, 166, "gate", "curation", "late · lean · isolated", 150),
+      n("win", 540, 166, "model", "the window", "finite attention", 138),
+      n("out", 700, 166, "io", "behavior", undefined, 96),
+      n("notes", 540, 286, "store", "notes files", "task list · decisions", 150),
+    ],
+    edges: [
+      e("files", "cur", "flow", undefined, undefined, "h"),
+      e("toolout", "cur", "flow", undefined, undefined, "h"),
+      e("hist", "cur", "flow", undefined, undefined, "h"),
+      e("cur", "win", "flow", "high signal"),
+      e("win", "out"),
+      // Structured note-taking: state leaves the window and is re-read on demand.
+      e("win", "notes", "link", undefined, true, "v"),
+    ],
+  },
+  {
+    id: "layers",
+    title: "The extension layers",
+    caption:
+      "One session, five extension surfaces — and choosing the surface is the design decision. An always-on convention is CLAUDE.md, paid for on every turn; a repeatable procedure is a skill, near-free until its description matches; a thing that must happen every time is a hook, run by the harness where the model can't skip it; isolated or parallel work forks a subagent with a window of its own; an external system arrives by MCP — as tool descriptions written into the prompt (L8 has opinions about that). A plugin ships the whole kit as one package.",
+    nodes: [
+      n("cmd", 118, 52, "store", "CLAUDE.md", "always loaded", 132),
+      n("skill", 462, 52, "store", "skills", "loaded on demand", 140),
+      n("ses", 290, 166, "model", "the session", "Claude Code", 140),
+      n("hook", 110, 280, "gate", "hooks", "deterministic", 124),
+      n("sub", 290, 296, "worker", "subagents", "own window", 130),
+      n("mcp", 468, 280, "tool", "MCP servers", "external systems", 140),
+    ],
+    edges: [
+      e("cmd", "ses", "flow", "every turn", undefined, "v"),
+      e("skill", "ses", "flow", "when relevant", undefined, "v"),
+      e("ses", "hook", "link", "can block", true, "v"),
+      e("ses", "sub", "spawn", undefined, undefined, "v"),
+      e("ses", "mcp", "link", undefined, true, "v"),
+    ],
+  },
 ];
 
 const byId = new Map(GRAPHS.map((g) => [g.id, g]));

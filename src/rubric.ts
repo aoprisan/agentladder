@@ -985,7 +985,7 @@ export function buildReviewMarkdown(review: Review, ordinalOf: (id: string) => s
     "",
     `**Grade ${review.grade}** (${review.score}/100) · ~${review.metrics.approxTokens.toLocaleString()} tokens · ${review.metrics.lines} lines · ${review.findings.length} finding${review.findings.length === 1 ? "" : "s"}`,
     "",
-    "> Generated locally by the agentic-workflows field guide. Heuristic, not authoritative — every finding cites the principle it came from so you can disagree with it on the merits.",
+    "> Generated locally by the agentic-workflows learning ladder. Heuristic, not authoritative — every finding cites the principle it came from so you can disagree with it on the merits.",
     "",
   ];
 
