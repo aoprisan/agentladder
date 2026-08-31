@@ -1,12 +1,17 @@
-# Agentic Workflows with Claude — team field guide
+# Agentic Workflows with Claude — a learning ladder from novice to expert
 
 A static TypeScript site (Vite, zero runtime dependencies) that takes a team
-from the basics of agentic AI to the 2026 state of the art, focused on Claude.
-Content is organized as levels L0–L8 plus a prompt-writing section, a
-toolbox and a sources section,
-with official documentation links throughout. Reading progress is tracked
-per-device in localStorage (the "ledger" — the same pattern the guide's L7
-section describes for long-running agents).
+from novice to expert in agentic AI, focused on Claude. Content is organized
+as levels L0–L10 — from the first workable mental model up through
+multi-agent systems, adversarial hardening, and loop engineering — plus a
+prompt-writing section, a toolbox and a sources section, with official
+documentation links throughout. It is built as a course, not a reference:
+reading is scheduled into spaced recall by the drill, applied in hands-on
+exercises (the lab, black box, bench and range), and certified by the
+checkride. Newcomers climb from L0 in order; experienced readers can take
+the checkride first and let the gaps it finds pick their rungs. Reading
+progress is tracked per-device in localStorage (the "ledger" — the same
+pattern the guide's L7 section describes for long-running agents).
 
 Beyond reading, the guide is a learning instrument:
 
@@ -112,7 +117,7 @@ index.html            app shell
 public/               favicon (SVG), manifest, service worker, icons
 src/main.ts           rendering, ledger state, scrollspy rail, feature wiring
 src/content.ts        sections L0–L3 (typed data)
-src/content2.ts       prompt writing, toolbox, L4–L8, sources
+src/content2.ts       prompt writing, toolbox, L4–L10, sources
 src/range.ts          the range: controls, threats, routes, scoring (pure logic)
 src/rangeui.ts        the range overlay (harden → call it → run → debrief)
 src/rubric.ts         the bench's review rules (pure logic)

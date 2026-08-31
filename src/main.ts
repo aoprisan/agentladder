@@ -173,7 +173,8 @@ function render(): void {
           ${wingsBanner()}
           <section class="intro">
             <h1>${meta.title}</h1>
-            <p class="lede">${meta.subtitle}. Work through the levels in order — each builds on the last. Mark sections done as you go; progress is stored locally on this device.</p>
+            <p class="lede">${meta.subtitle}. This is a course with a spine, not a reference to skim: eleven levels climb from the first workable mental model (L0) to expert practice — multi-agent systems, adversarial hardening, engineering the loop itself (L10) — and each rung assumes the ones below it.</p>
+            <p class="lede">It also checks that the learning sticks. The drill schedules what you read for spaced recall; the lab, black box, bench and range make you apply it to live runs, real artifacts and real attacks; the checkride certifies the result. New to agents? Start at L0 and climb in order. Already deep in this? Take the checkride first and let the gaps it finds pick your rungs. Mark sections done as you go; progress stays on this device and can travel to a teammate by link.</p>
             <p class="disclaimer">${meta.disclaimer}</p>
           </section>
           ${articles}
