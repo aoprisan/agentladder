@@ -2,8 +2,9 @@
 
 A static TypeScript site (Vite, zero runtime dependencies) that takes a team
 from novice to expert in agentic AI, focused on Claude. Content is organized
-as levels L0–L10 — from the first workable mental model up through
-multi-agent systems, adversarial hardening, and loop engineering — plus a
+as levels L0–L11 — from the first workable mental model up through
+multi-agent systems, adversarial hardening, loop engineering, and the
+evals that prove it works — plus a
 prompt-writing section, a toolbox and a sources section, with official
 documentation links throughout. It is built as a course, not a reference:
 reading is scheduled into spaced recall by the drill, applied in hands-on
@@ -117,7 +118,7 @@ index.html            app shell
 public/               favicon (SVG), manifest, service worker, icons
 src/main.ts           rendering, ledger state, scrollspy rail, feature wiring
 src/content.ts        sections L0–L3 (typed data)
-src/content2.ts       prompt writing, toolbox, L4–L10, sources
+src/content2.ts       prompt writing, toolbox, L4–L11, sources
 src/range.ts          the range: controls, threats, routes, scoring (pure logic)
 src/rangeui.ts        the range overlay (harden → call it → run → debrief)
 src/rubric.ts         the bench's review rules (pure logic)

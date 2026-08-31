@@ -12,7 +12,7 @@
     "typescript": "^5.9.3",
     "vite": "^6.4.3"
   },
-  "description": "A static TypeScript site (Vite) that takes a team from novice to expert in agentic AI with Claude: levels L0–L10 plus prompt writing, a toolbox and sources, with spaced-recall drills, hands-on exercises, a certification checkride, and official documentation links throughout. Per-device progress in localStorage.",
+  "description": "A static TypeScript site (Vite) that takes a team from novice to expert in agentic AI with Claude: levels L0–L11 plus prompt writing, a toolbox and sources, with spaced-recall drills, hands-on exercises, a certification checkride, and official documentation links throughout. Per-device progress in localStorage.",
   "keywords": [],
   "author": "",
   "license": "ISC"

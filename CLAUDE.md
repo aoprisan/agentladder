@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A static, zero-runtime-dependency TypeScript site (Vite) that teaches teams
-agentic workflows with Claude, organized as levels L0–L10 plus a prompt-writing
+agentic workflows with Claude, organized as levels L0–L11 plus a prompt-writing
 section (PW), a toolbox (TB) and a sources/reference (REF) section. There is no backend; reading progress
 ("the ledger") and recall-drill scheduling are persisted per-device in
 `localStorage`, and progress can travel between people via share-links
@@ -34,7 +34,7 @@ Everything renders from typed data. The moving parts:
 
 - **`src/content.ts`** — defines the `Section` and `DocLink` interfaces, the
   `meta` object (title/subtitle/updated/disclaimer), and `sections` L0–L3.
-- **`src/content2.ts`** — `sections2`: prompt writing (PW), the toolbox, L4–L10,
+- **`src/content2.ts`** — `sections2`: prompt writing (PW), the toolbox, L4–L11,
   and sources. Imports the `Section` type from `content.ts`.
 - **`src/main.ts`** — concatenates `[...part1, ...sections2]` into one array,
   then renders the whole page by string-templating `innerHTML`. It owns ledger
@@ -214,7 +214,7 @@ that way; do not feed user or fetched input through it. `docs` renders as an
 **To add or edit a section**, add/modify a `Section` object in `content.ts`
 (L0–L3) or `content2.ts` (everything else). The nav rail, progress gauge, and
 scrollspy all derive from the sections array automatically — no wiring needed.
-`ordinal` is the label shown ("L0"…"L7", "PW", "TB", "REF"); `id` is the
+`ordinal` is the label shown ("L0"…"L11", "PW", "TB", "REF"); `id` is the
 anchor and the ledger key. To drop a topology diagram into a body, add an
 empty `<div data-graph="<graph id>"></div>` — `main.ts` fills it from
 `agentgraph.ts`; add the graph there first if it doesn't exist yet. Interactive

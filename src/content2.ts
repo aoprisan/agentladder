@@ -270,6 +270,7 @@ for await (const msg of query({
 <li>Judge end states, not turn-by-turn scripts — allow different valid paths to the outcome.</li>
 <li>Track per-agent and per-tool token cost; in multi-agent setups, cost attribution is the difference between a tunable system and a mystery bill.</li>
 </ul>
+<p>That is the sketch; evals as a discipline — the set, the judge, the regression gate — is L11.</p>
 
 <h3>Adoption ladder for a team</h3>
 <ol>
@@ -567,6 +568,51 @@ for await (const msg of query({
       { label: "Effective Harnesses for Long-Running Agents", url: "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents" },
       { label: "Claude Agent SDK — the loop as a library", url: "https://code.claude.com/docs/en/agent-sdk/overview" },
       { label: "Hooks reference — verification the model can't skip", url: "https://code.claude.com/docs/en/hooks" },
+    ],
+  },
+  {
+    id: "evals",
+    ordinal: "L11",
+    title: "Evals — proving it works",
+    tagline: "L10 puts a verifier inside the loop. This puts one around the whole system — so a prompt edit can't quietly cost you what a bad merge would.",
+    body: `
+<p>Everything before this point changes the system: a tighter prompt (PW), a leaner context (L2), a better tool description (L3), a different architecture (L1, L5). L5 delivered the warning that comes with that power — <strong>small changes cascade</strong>, and a minor prompt edit can produce a large behavioral shift. An eval is the instrument that notices. Without one, every improvement is a claim; with one, it is a measurement — and the difference between those two is the difference between engineering and vibes.</p>
+<p>The good news is the price of entry: Anthropic's guidance is to start with roughly <strong>twenty realistic tasks</strong>, because in agentic systems small samples reveal large effects. You do not need an eval platform to start. You need twenty tasks, a way to score them, and the discipline to run them before you ship a change.</p>
+
+<h3>The eval set</h3>
+<ul>
+<li><strong>Draw tasks from reality, not imagination.</strong> Real transcripts, real tickets, real inputs — synthetic tasks measure the system you imagined, and the gap between the two is exactly where failures live.</li>
+<li><strong>Every incident becomes a task.</strong> The run that went wrong last week is the most valuable eval you own: it is a failure you <em>know</em> the system can produce. That is a regression test, and it is how the set grows teeth over time.</li>
+<li><strong>Grade end states, not scripts.</strong> Judge whether the outcome is right — the bug fixed, the answer supported, the file in the right shape — and let different valid paths reach it (L7). An eval that requires one exact tool sequence fails every improvement.</li>
+<li><strong>Pin everything you aren't testing.</strong> Model id, prompts, tool set, fixtures. A moved number means something only when one thing moved.</li>
+</ul>
+
+<h3>The graders, strongest first</h3>
+<p>The verifier hierarchy from L10 applies unchanged — it just runs over a whole eval set instead of one loop:</p>
+<ol>
+<li><strong>Programmatic checks</strong> — the diff applies, the tests pass, the schema validates, the answer string matches. Cheap, non-negotiable, and where every eval should start.</li>
+<li><strong>LLM-as-judge with a rubric, in a fresh context</strong> — for what no test can express: is the citation supported, is the tone right, did it answer the question asked. Ask for <em>per-criterion verdicts</em> (accuracy, completeness, citation quality, tool efficiency — L7's rubric), never a single 1–10: one number is where regressions hide.</li>
+<li><strong>Human transcript review</strong> — reserved for the failure modes rubrics miss. Sample it; don't try to scale it.</li>
+</ol>
+<p class="callout"><strong>Calibrate the judge before you trust it.</strong> Run it over transcripts humans have already graded and measure the agreement; re-check whenever the judge's model or rubric changes. An uncalibrated judge is an opinion with a spreadsheet — and it drifts, silently, every time the model behind it moves.</p>
+
+<h3>Reading the number</h3>
+<ul>
+<li><strong>Run each task more than once.</strong> Agents are nondeterministic: a 70% pass rate might be seven tasks that always pass, or ten that each flake — and those are different problems with different fixes. Variance per task is the diagnosis; the aggregate is just the symptom.</li>
+<li><strong>Track cost and latency beside quality.</strong> L5's lesson was that token spend explains most of the performance gain — so a quality win is only a win at a price you'd pay again. A scoreboard without a cost column optimizes one axis and silently bills you on the other two.</li>
+<li><strong>Read the transcripts.</strong> The score tells you <em>that</em>; only the transcript tells you <em>why</em>. The same trick that works for tools (L3) works here: have the model itself classify failure modes across the transcripts and propose fixes — grading agents with agents is exactly the workflow these systems are good at.</li>
+</ul>
+
+<h3>The regression gate</h3>
+<p>An eval you run when you remember is a demo. The end state is the eval as a <strong>merge gate</strong>: headless (<code>claude -p</code>) or through the SDK in CI, triggered by changes to the things the guide keeps telling you to iterate on — prompts, tool descriptions, <code>CLAUDE.md</code>, model version. L9 argued those files are executable and should be reviewed as source; this is the other half: <strong>they can regress, so they get tests</strong>. A red eval blocks a prompt merge for the same reason a red test blocks a code merge.</p>
+<p>One discipline the gate needs: <strong>hold out a subset you never tune against.</strong> Iterate freely against the working set — but if every task has been used to fix a failure, the set has been trained on, and the number it produces is a memory, not a measurement.</p>
+<p class="callout"><strong>You have been inside one all along.</strong> This guide is built as an eval: the drill is a per-item verifier on a schedule, the checkride is a held-out sample with a pass mark it never lets you tune against, and the flight record is the dashboard. Steal the design — it is the same one your agents need.</p>
+`,
+    docs: [
+      { label: "Define your success criteria (Claude docs)", url: "https://docs.claude.com/en/docs/test-and-evaluate/define-success" },
+      { label: "Create strong empirical evals (Claude docs)", url: "https://docs.claude.com/en/docs/test-and-evaluate/develop-tests" },
+      { label: "Building Effective Agents (evaluation guidance)", url: "https://www.anthropic.com/engineering/building-effective-agents" },
+      { label: "How We Built Our Multi-Agent Research System (eval findings)", url: "https://www.anthropic.com/engineering/multi-agent-research-system" },
     ],
   },
   {

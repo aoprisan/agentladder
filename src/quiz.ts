@@ -852,6 +852,78 @@ export const questionBank: QuizQuestion[] = [
       "Every budget needs a behaviour on exhaustion, and \"stop\" throws away everything the run learned. Writing state to a file makes exhaustion a handoff (L7) rather than a death — same limit, but the next session starts warm.",
   },
 
+  // L11 — evals --------------------------------------------------------------
+  {
+    id: "evals-1",
+    sectionId: "evals",
+    prompt: "Anthropic's recommended starting point for evaluating an agentic system:",
+    options: [
+      "a benchmark suite of several hundred synthetic tasks",
+      "roughly twenty realistic tasks — small samples reveal large effects",
+      "wait until production traffic provides the data",
+      "an eval platform, chosen before any tasks are written",
+    ],
+    answer: 1,
+    explain:
+      "Start with ~20 realistic tasks. In agentic systems, small samples reveal large effects — you need tasks, a way to score them, and the discipline to run them, not a platform.",
+  },
+  {
+    id: "evals-2",
+    sectionId: "evals",
+    prompt: "When using an LLM-as-judge, why ask for per-criterion verdicts instead of a single 1–10 score?",
+    options: [
+      "single numbers are harder for models to produce",
+      "per-criterion verdicts run faster",
+      "one aggregate number is where regressions hide — a criterion can fall while the average holds",
+      "rubrics are only valid with at least ten criteria",
+    ],
+    answer: 2,
+    explain:
+      "A single score can stay flat while accuracy falls and verbosity rises. Per-criterion verdicts (accuracy, completeness, citation quality, tool efficiency) make the regression visible.",
+  },
+  {
+    id: "evals-3",
+    sectionId: "evals",
+    prompt: "A task in your eval set passes 70% of the time. The guide's advice before acting on that number:",
+    options: [
+      "raise the pass mark to 80%",
+      "run each task multiple times — variance per task tells you whether it's a few tasks always failing or many tasks flaking",
+      "switch to a more capable model",
+      "remove the task; unstable tasks don't belong in an eval set",
+    ],
+    answer: 1,
+    explain:
+      "Agents are nondeterministic. Seven tasks that always pass and ten that each flake produce the same aggregate — and they are different problems with different fixes. Variance is the diagnosis.",
+  },
+  {
+    id: "evals-4",
+    sectionId: "evals",
+    prompt: "Why hold out a subset of eval tasks you never tune against?",
+    options: [
+      "to keep CI runs fast",
+      "held-out tasks are cheaper to grade",
+      "if every task has been used to fix a failure, the set has been trained on — its number is a memory, not a measurement",
+      "the judge model requires unseen data to stay calibrated",
+    ],
+    answer: 2,
+    explain:
+      "Iterating against the whole set is training on the test set. The held-out subset is what keeps the score an honest estimate of behavior on work the system hasn't seen.",
+  },
+  {
+    id: "evals-5",
+    sectionId: "evals",
+    prompt: "Evals should grade…",
+    options: [
+      "the exact tool sequence the agent used",
+      "end states — whether the outcome is right — allowing different valid paths to reach it",
+      "turn count, since fewer turns means better reasoning",
+      "the agent's own confidence in its answer",
+    ],
+    answer: 1,
+    explain:
+      "Judge whether the bug is fixed and the answer supported, not which route got there. An eval that requires one exact tool sequence fails every improvement.",
+  },
+
   // REF — sources -----------------------------------------------------------
   {
     id: "sources-1",
