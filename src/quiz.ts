@@ -324,6 +324,20 @@ export const questionBank: QuizQuestion[] = [
     explain:
       "Context engineering applies to tools too: each registered server's tool descriptions are paid for on every single turn, whether used or not.",
   },
+  {
+    id: "toolbox-4",
+    sectionId: "toolbox",
+    prompt: "Relative to fresh input tokens, a prompt-cache <em>read</em> is billed at roughly…",
+    options: [
+      "the same rate — caching saves latency, not money",
+      "half",
+      "a tenth",
+      "nothing — cache reads are free",
+    ],
+    answer: 2,
+    explain:
+      "Reads bill at ~0.1× fresh input; writes carry a premium (~1.25× at the default 5-minute lifetime, ~2× at 1 hour). Caching pays when a prefix is actually reused — verify with cache_read_input_tokens.",
+  },
 
   // L4 — Claude Code as a harness ------------------------------------------
   {

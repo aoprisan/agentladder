@@ -101,12 +101,24 @@ export const sections2: Section[] = [
 <p>The <strong>Model Context Protocol</strong> is the open standard for connecting agents to external systems: an MCP server exposes tools, resources, and prompts; any MCP client (Claude Code, Claude.ai, the Agent SDK, many third-party agents) can use them. Official SDKs exist for TypeScript, Python, Rust, and more.</p>
 <p>Servers your team will most likely reach for: GitHub (issues/PRs/CI), Playwright or Puppeteer (browser control for UI verification), Sentry, Postgres/SQLite, filesystem, Slack, Google Drive. Register with <code>claude mcp add</code>, scope config per-project via <code>.mcp.json</code>, and keep the set small — every connected server's tool descriptions consume context on every turn (L2 applies to tools too).</p>
 <p class="callout"><strong>Rule of thumb for choosing:</strong> bash + file tools for anything local and scriptable; MCP for external systems with auth, state, or APIs that bash can't cleanly reach; custom API tools only when you're building your own agent and need tight control over the surface.</p>
+
+<h3>The economics — paying for tokens once instead of every turn</h3>
+<p>Prices rot faster than anything else on this page, so what follows is the mechanics — check the pricing page for today's numbers. The mechanics are stable, and they are where the real savings live:</p>
+<ul>
+<li><strong>Prompt caching.</strong> A cache hit is a byte-exact prefix match (PW). Reads bill at roughly a <em>tenth</em> of fresh input; writes carry a premium (~1.25× for the default 5-minute lifetime, ~2× for the 1-hour option) — so caching pays when a prefix is actually reused and costs extra when it isn't. Keep the stable parts (system prompt, tool definitions) first and byte-identical, the volatile parts last, and verify with <code>cache_read_input_tokens</code> in the response: zero across identical requests means something is quietly changing per request.</li>
+<li><strong>Batching.</strong> Anything that can wait — nightly evals (L11), backfills, bulk classification — runs asynchronously at <strong>half price</strong> through the batch endpoint.</li>
+<li><strong>Tiering and effort.</strong> Pin cheap, fast models on discovery subagents and the frontier model on synthesis (L4.4). On current models the <em>effort</em> control is the first lever to try: turning effort down on a strong model often beats switching to a weaker one, and it keeps one cache namespace where a model cascade forfeits cache reuse.</li>
+<li><strong>Judge cost per completed task, not per request.</strong> A cheaper call that needs more turns, retries, or human clean-up is not cheaper. Same lesson as the L5 numbers: spend is only meaningful next to what it bought.</li>
+</ul>
 `,
     docs: [
       { label: "Tool use overview (API docs)", url: "https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview" },
       { label: "MCP in Claude Code (official docs)", url: "https://code.claude.com/docs/en/mcp" },
       { label: "Model Context Protocol — spec & SDKs", url: "https://modelcontextprotocol.io" },
       { label: "MCP servers — reference implementations", url: "https://github.com/modelcontextprotocol/servers" },
+      { label: "Pricing (Claude docs)", url: "https://docs.claude.com/en/docs/about-claude/pricing" },
+      { label: "Prompt caching", url: "https://docs.claude.com/en/docs/build-with-claude/prompt-caching" },
+      { label: "Batch processing", url: "https://docs.claude.com/en/docs/build-with-claude/batch-processing" },
     ],
   },
   {
@@ -638,6 +650,8 @@ for await (const msg of query({
 <li><a href="https://code.claude.com/docs/en/agent-sdk/overview" target="_blank" rel="noopener">Claude Agent SDK</a></li>
 <li><a href="https://docs.claude.com/en/api/overview" target="_blank" rel="noopener">Claude API</a> · <a href="https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview" target="_blank" rel="noopener">tool use</a> · <a href="https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" target="_blank" rel="noopener">prompt engineering</a></li>
 <li><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> · <a href="https://github.com/modelcontextprotocol/servers" target="_blank" rel="noopener">reference servers</a></li>
+<li><a href="https://code.claude.com/docs/en/security" target="_blank" rel="noopener">Security</a> · <a href="https://code.claude.com/docs/en/permissions" target="_blank" rel="noopener">permissions</a> · <a href="https://code.claude.com/docs/en/sandboxing" target="_blank" rel="noopener">sandboxing</a> — the reading behind L8–L9</li>
+<li><a href="https://docs.claude.com/en/docs/test-and-evaluate/define-success" target="_blank" rel="noopener">Define success criteria</a> · <a href="https://docs.claude.com/en/docs/test-and-evaluate/develop-tests" target="_blank" rel="noopener">empirical evals</a> — the reading behind L11</li>
 <li><a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">anthropics/skills</a> · <a href="https://github.com/anthropics/anthropic-cookbook" target="_blank" rel="noopener">anthropic-cookbook</a> · <a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener">anthropics/claude-code</a></li>
 </ul>
 

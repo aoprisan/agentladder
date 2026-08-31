@@ -102,6 +102,8 @@ export const sections: Section[] = [
 <li><strong>Sub-agent context isolation</strong> — push exploration and other token-hungry work into a separate context window that returns only a condensed summary. This isn't just parallelism: it prevents contamination of the main context with failed attempts and noise.</li>
 </ul>
 
+<p>Building on the raw API rather than a harness? The same ideas exist as API features: an Anthropic-defined <strong>memory tool</strong> the model calls to read and write persistent notes, and server-side <strong>context editing</strong> and <strong>compaction</strong> that clear or summarize stale tool results as the window fills. Several are beta — check the docs for current names — but the discipline is identical either way.</p>
+
 <h3>The filesystem as context architecture</h3>
 <p>A recurring theme in the Agent SDK guidance: <strong>folder and file structure is itself context engineering</strong>. An email agent that stores past conversations in a <code>conversations/</code> folder can search them on demand. Designing what the agent persists, where, and in what format is a first-class design decision.</p>
 `,
@@ -109,6 +111,8 @@ export const sections: Section[] = [
       { label: "Effective Context Engineering for AI Agents", url: "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" },
       { label: "Prompt engineering overview (Claude docs)", url: "https://docs.claude.com/en/docs/build-with-claude/prompt-engineering/overview" },
       { label: "Building Agents with the Claude Agent SDK", url: "https://claude.com/blog/building-agents-with-the-claude-agent-sdk" },
+      { label: "Memory tool (API docs)", url: "https://docs.claude.com/en/docs/agents-and-tools/tool-use/memory-tool" },
+      { label: "Context editing (API docs)", url: "https://docs.claude.com/en/docs/build-with-claude/context-editing" },
     ],
   },
   {
