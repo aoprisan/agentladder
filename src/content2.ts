@@ -152,6 +152,7 @@ export const sections2: Section[] = [
 </ul>
 
 <h3>4.5 Choosing between the primitives</h3>
+<div data-graph="layers"></div>
 <table>
 <thead><tr><th>Need</th><th>Primitive</th></tr></thead>
 <tbody>

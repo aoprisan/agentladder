@@ -71,10 +71,10 @@ Everything renders from typed data. The moving parts:
   edges, hand-laid coordinates) plus a string renderer, no DOM. `renderGraph`
   emits inline SVG styled entirely from `styles.css`; `renderFigure` wraps it
   with its caption; `mermaidFor` emits the same graph as a Mermaid flowchart
-  (the architect's brief carries one into the RFC). Fourteen graphs: the seven
+  (the architect's brief carries one into the RFC). Sixteen graphs: the seven
   L1 patterns — **their ids are the `PatternId`s**, so `graphFor(pattern)`
-  works — plus `augmented`, `loop`, `loopeng`, `research`, `teams`, `trust`
-  and `defense`. Node ids are the
+  works — plus `augmented`, `loop`, `loopeng`, `funnel`, `layers`,
+  `research`, `teams`, `trust` and `defense`. Node ids are the
   run positions `labsim.ts` emits; if you rename one, rename it there too or
   the lab's live highlight silently stops moving. Section bodies mark a
   diagram with an empty `<div data-graph="…">` and `main.ts` hydrates it after

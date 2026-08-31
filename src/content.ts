@@ -101,6 +101,7 @@ export const sections: Section[] = [
 <li><strong>Structured note-taking / external memory</strong> — have the agent write durable state to files (task lists, progress logs, decision records) outside the context window and re-read them as needed. The filesystem is the agent's long-term memory.</li>
 <li><strong>Sub-agent context isolation</strong> — push exploration and other token-hungry work into a separate context window that returns only a condensed summary. This isn't just parallelism: it prevents contamination of the main context with failed attempts and noise.</li>
 </ul>
+<div data-graph="funnel"></div>
 
 <p>Building on the raw API rather than a harness? The same ideas exist as API features: an Anthropic-defined <strong>memory tool</strong> the model calls to read and write persistent notes, and server-side <strong>context editing</strong> and <strong>compaction</strong> that clear or summarize stale tool results as the window fills. Several are beta — check the docs for current names — but the discipline is identical either way.</p>
 
