@@ -91,7 +91,7 @@ export const sections2: Section[] = [
 <ul>
 <li><strong>Web search</strong> — server-side search with citations.</li>
 <li><strong>Code execution</strong> — a sandboxed Python environment for analysis and file generation.</li>
-<li><strong>Computer use</strong> — screenshot + mouse/keyboard control of a desktop for UI automation.</li>
+<li><strong>Computer use</strong> — screenshot + mouse/keyboard control of a desktop for UI automation (server-hosted, or self-hosted where you run the desktop).</li>
 <li><strong>Text editor &amp; bash tools</strong> — Anthropic-defined tool schemas Claude is specifically trained on; you supply the execution.</li>
 <li><strong>Files API</strong> — upload once, reference across requests.</li>
 <li><strong>MCP connector</strong> — call remote MCP servers directly from an API request, without running your own client.</li>
@@ -136,7 +136,7 @@ export const sections2: Section[] = [
 <ul>
 <li><strong>Fork for breadth, stay inline for depth</strong>: delegate scanning, discovery, research, review — work that produces a summary. Keep reasoning-heavy sequential work in the main thread where you can steer it.</li>
 <li>Pin models per subagent: a cheap, fast model for discovery sweeps, the frontier model for synthesis — much of your cost control lives here.</li>
-<li>As of mid-2026, subagents <strong>nest</strong> (subagents spawning subagents, several levels deep), and <code>/usage</code> attributes cost per skill, subagent, and MCP server.</li>
+<li>Subagents <strong>nest</strong> — subagents spawning subagents, up to three layers below the main conversation by default — so a discovery sweep can fan out sweeps of its own. Every layer multiplies tokens (L5), so keep an eye on where the spend lands.</li>
 </ul>
 
 <h3>4.5 Choosing between the primitives</h3>
@@ -198,7 +198,7 @@ export const sections2: Section[] = [
 </ul>
 
 <h3>Agent teams (2026)</h3>
-<p>In February 2026 Claude Code shipped <strong>agent teams</strong> (research preview): one session acts as team lead; teammates run independently, each in its own context window and Git worktree — and unlike subagents, teammates <strong>communicate with each other directly</strong> (messaging, broadcasting, plan approval), not just report to a parent. Good for parallel research and review where teammates challenge each other's findings, and for features where each teammate owns a distinct component. Costs: real coordination overhead and token usage — same rule as always: use it when the task actually decomposes.</p>
+<p>In February 2026 Claude Code shipped <strong>agent teams</strong> — still experimental and disabled by default; an environment variable turns them on. One session acts as team lead; teammates run independently, each in its own context window and Git worktree — and unlike subagents, teammates <strong>communicate with each other directly</strong> (messaging, broadcasting, plan approval), not just report to a parent. Good for parallel research and review where teammates challenge each other's findings, and for features where each teammate owns a distinct component. Costs: real coordination overhead and token usage — same rule as always: use it when the task actually decomposes.</p>
 <div data-graph="teams"></div>
 <p>The two diagrams differ in one edge: subagents only report upward, teammates also talk sideways. That single edge is what buys you review that argues back — and what buys you a coordination bill.</p>
 <p>The community pattern that agent teams formalize — parallel Claude Code sessions in Git worktrees on independent tasks — remains useful on its own and is the cheapest entry into multi-agent work.</p>
