@@ -15,7 +15,7 @@ export interface Section {
 export const meta = {
   title: "Agentic Workflows with Claude",
   subtitle: "From novice to expert, rung by rung — a learning ladder for teams",
-  updated: "July 2026",
+  updated: "August 2026",
   disclaimer:
     "This space moves monthly. Version-specific details (agent teams, nested subagents, CLI flags) should be re-verified against the official docs before you rely on them.",
 };

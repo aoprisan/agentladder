@@ -23,7 +23,7 @@ export const sections2: Section[] = [
 <tr><td><strong>Markdown</strong></td><td>Instruction documents: <code>CLAUDE.md</code>, <code>SKILL.md</code>, system prompts, anything a human also maintains.</td><td>Almost free, and it is the native register of the material these models were trained on. Weak at nesting: a Markdown list inside a pasted Markdown document has no visible seam.</td></tr>
 <tr><td><strong>XML tags</strong></td><td>Long or mixed context — a document plus a spec plus examples — and anywhere you need to refer to a region by name. Anthropic's long-standing recommendation for Claude.</td><td>You pay for the tag twice, opening and closing. Worth it when there is something to delimit; pure overhead when there isn't.</td></tr>
 <tr><td><strong>JSON</strong></td><td><em>Output</em> a machine will consume — and even then, prefer the mechanisms built for it: structured outputs (<code>output_config.format</code>) or a tool's input schema, which constrain the shape instead of asking politely.</td><td>Expensive as <em>input</em>: braces, quotes, colons and commas are all tokens, and escaping makes any embedded code or prose harder for both of you to read.</td></tr>
-<tr><td><strong>HTML</strong></td><td>Essentially never, as something you author.</td><td>You mostly <em>receive</em> it — fetched pages, scraped docs. Tag soup is a large token multiplier carrying almost no signal; convert to Markdown or text before it enters the context, and treat the content as untrusted data either way (L7).</td></tr>
+<tr><td><strong>HTML</strong></td><td>Essentially never, as something you author.</td><td>You mostly <em>receive</em> it — fetched pages, scraped docs. Tag soup is a large token multiplier carrying almost no signal; convert to Markdown or text before it enters the context, and treat the content as untrusted data either way (L8).</td></tr>
 <tr><td><strong>YAML / TOML</strong></td><td>Metadata and configuration — skill frontmatter, agent definitions.</td><td>Terse and readable, but whitespace-significant: a bad place to embed free-form text that might contain a colon.</td></tr>
 <tr><td><strong>CSV / TSV</strong></td><td>Tabular data, especially many rows.</td><td>Dramatically cheaper than the same rows as JSON objects — the field names are paid for once in the header instead of once per row.</td></tr>
 </tbody>
@@ -35,7 +35,7 @@ export const sections2: Section[] = [
 <li><strong>Name tags for what they contain</strong> — <code>&lt;transcript&gt;</code>, <code>&lt;style_guide&gt;</code>, <code>&lt;acceptance_criteria&gt;</code> — and reuse the same names in the instruction. A tag you never refer to is a comment.</li>
 <li><strong>Long input first, the question last.</strong> With a long document in context, put the document above the instructions and keep the actual ask at the end; Anthropic's long-context guidance is explicit about that ordering.</li>
 <li><strong>Examples are the highest-value tokens in the prompt.</strong> Two or three worked examples in the format you want back will beat a paragraph describing that format, every time. If you find yourself writing rules about output shape, you probably wanted an example — or a schema.</li>
-<li><strong>Data you delimit can contain your delimiter.</strong> Pasted content with a stray <code>&lt;/document&gt;</code> in it will close your tag early — and if that content came from the web or an issue tracker, that is a prompt-injection surface, not just a formatting bug (L7).</li>
+<li><strong>Data you delimit can contain your delimiter.</strong> Pasted content with a stray <code>&lt;/document&gt;</code> in it will close your tag early — and if that content came from the web or an issue tracker, that is a prompt-injection surface, not just a formatting bug (L8).</li>
 <li><strong>Reformatting is not free even when it's cheap.</strong> A prompt-cache hit is a byte-exact prefix match, so re-indenting or re-wrapping your standing context invalidates the cache for everything after the edit. Settle the format, then leave it alone.</li>
 </ul>
 
@@ -78,7 +78,7 @@ export const sections2: Section[] = [
 <tr><td><code>Bash</code></td><td>Run shell commands</td><td>Supports <code>run_in_background</code> for long jobs; the workhorse</td></tr>
 <tr><td><code>Read</code> / <code>Write</code> / <code>Edit</code></td><td>File I/O and surgical string-replace edits</td><td>Edits are diff-reviewable in the UI</td></tr>
 <tr><td><code>Glob</code> / <code>Grep</code></td><td>Find files by pattern, search content (ripgrep)</td><td>Cheap discovery — pairs with just-in-time retrieval (L2)</td></tr>
-<tr><td><code>WebSearch</code> / <code>WebFetch</code></td><td>Search the web, fetch and read pages</td><td>Treat fetched content as untrusted data (see L7)</td></tr>
+<tr><td><code>WebSearch</code> / <code>WebFetch</code></td><td>Search the web, fetch and read pages</td><td>Treat fetched content as untrusted data (see L8)</td></tr>
 <tr><td><code>Task</code></td><td>Spawn a subagent in its own context window</td><td>The multi-agent primitive (L4.4, L5)</td></tr>
 <tr><td><code>TodoWrite</code></td><td>Maintain a visible task checklist</td><td>Structured note-taking made native</td></tr>
 <tr><td><code>AskUserQuestion</code></td><td>Ask you a structured question mid-run</td><td>Human-in-the-loop checkpoint</td></tr>
