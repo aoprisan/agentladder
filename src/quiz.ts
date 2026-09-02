@@ -228,6 +228,21 @@ export const questionBank: QuizQuestion[] = [
       "Meaningful errors are the agent's feedback channel. A precise, actionable error turns a dead end into a recoverable step.",
   },
 
+  {
+    id: "tool-design-5",
+    sectionId: "tool-design",
+    prompt: "A tool description is best understood as…",
+    options: [
+      "documentation: a complete list of the tool's parameters",
+      "a routing decision: when to reach for this tool, when not to, and what a failure means",
+      "a version string the model can check",
+      "an example payload the model copies",
+    ],
+    answer: 1,
+    explain:
+      "The model reads the description while choosing between this tool and everything else on the surface. The trigger condition, the boundary against neighbouring tools, the return shape and the meaning of an empty result are the sentences that decide the route — and each is otherwise a guess.",
+  },
+
   // PW — prompt formats & token cost ----------------------------------------
   {
     id: "prompt-formats-1",
@@ -936,6 +951,68 @@ export const questionBank: QuizQuestion[] = [
     answer: 1,
     explain:
       "Judge whether the bug is fixed and the answer supported, not which route got there. An eval that requires one exact tool sequence fails every improvement.",
+  },
+
+  // L12 — reading the run ----------------------------------------------------
+  {
+    id: "observability-1",
+    sectionId: "observability",
+    prompt: "Which record is the <em>primary source</em> for an agent run — the thing every other observability signal is a projection of?",
+    options: [
+      "The cost dashboard",
+      "The transcript: every turn, with each tool call's arguments and result",
+      "The eval score",
+      "The final artifact",
+    ],
+    answer: 1,
+    explain:
+      "A cost is a sum over the turns, a score is a judgement of the end state, a metric is a count of something in the run. Only the transcript is complete — and only if it holds every tool call with its arguments and result.",
+  },
+  {
+    id: "observability-2",
+    sectionId: "observability",
+    prompt: "A path invented at turn 4 crashes the run at turn 19. Which turn do you flag?",
+    options: [
+      "Turn 19 — that is where it failed",
+      "Turn 4 — the first turn where the model acted on a belief it hadn't earned",
+      "Both, equally",
+      "Turn 1 — the prompt should have prevented it",
+    ],
+    answer: 1,
+    explain:
+      "Find the turn where the run stopped being right, not the turn where it failed. Walk backwards asking what the model believed and whether it had earned that belief; the crash at turn 19 is a symptom of turn 4.",
+  },
+  {
+    id: "observability-3",
+    sectionId: "observability",
+    prompt: "At which grain should cost be attributed so the bill becomes a diagnosis?",
+    options: ["Per run", "Per day", "Per agent and per tool", "Per user"],
+    answer: 2,
+    explain:
+      "Usage per turn, summed by the agent that spent it and the tool that returned it — that is what reveals the discovery subagent outspending the synthesis, or one tool returning 40 KB where 2 KB would do. A total per run is a mystery bill.",
+  },
+  {
+    id: "observability-4",
+    sectionId: "observability",
+    prompt: "A run comes back green: the tests pass. The diff shows the failing test was edited, not the code. Which fault is that?",
+    options: ["Silent assumption", "Lost handoff", "Goal drift", "Context rot"],
+    answer: 2,
+    explain:
+      "Goal drift optimises the measurable proxy instead of the goal — the metric went green and the task didn't get done. It hides inside success, which is why passing runs deserve a look too, and why a verifier the agent can edit is not a verifier.",
+  },
+  {
+    id: "observability-5",
+    sectionId: "observability",
+    prompt: "A long run failed at turn 40. The rollout discipline says to…",
+    options: [
+      "restart from turn 1 so the run is clean",
+      "resume from turn 40 with the ledger the run wrote — restarting from zero pays the forty turns again and may not reproduce the fault",
+      "retry the same run three times",
+      "delete the transcript and rerun with a bigger model",
+    ],
+    answer: 1,
+    explain:
+      "Resume from the error, not from zero. A fresh run is a different run — it may not reproduce the fault you are trying to read — and the forty turns are paid again for nothing.",
   },
 
   // REF — sources -----------------------------------------------------------

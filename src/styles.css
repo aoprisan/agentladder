@@ -3203,3 +3203,299 @@ a:hover {
     position: static;
   }
 }
+
+/* Course navigation ----------------------------------------------------
+   Reading time in the header, previous / next rung at the foot, an
+   "on this rung" outline for the long sections, and linkable headings.
+   Same instrument-panel register as the rest: mono labels, one amber. */
+
+.section-head .eyebrow .tagline {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.read-time {
+  margin-left: auto;
+  white-space: nowrap;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.rung-foot {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rung-foot .ledger-toggle {
+  margin-top: 0;
+}
+
+.rung-nav {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.rung-link {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--muted);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  padding: 8px 12px;
+  max-width: 280px;
+  min-width: 0;
+}
+
+.rung-link:hover {
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.rung-link .ord {
+  color: var(--signal);
+  font-weight: 700;
+}
+
+.rung-link .rung-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rung-link.prev::before {
+  content: "←";
+}
+
+.rung-link.next::after {
+  content: "→";
+}
+
+.outline {
+  margin: 14px 0 4px;
+  padding: 10px 14px 8px;
+  border: 1px dashed var(--hairline);
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+
+.outline-label {
+  display: block;
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.outline ol {
+  margin: 0;
+  padding-left: 20px;
+  columns: 2;
+  column-gap: 28px;
+}
+
+.outline li {
+  break-inside: avoid;
+  margin: 2px 0;
+  padding-right: 6px;
+}
+
+.outline a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.outline a:hover {
+  color: var(--signal);
+}
+
+.body h3 {
+  scroll-margin-top: 72px;
+}
+
+.hlink {
+  font-weight: 400;
+  color: var(--muted);
+  text-decoration: none;
+  margin-left: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.body h3:hover .hlink,
+.hlink:focus-visible {
+  opacity: 1;
+}
+
+.hlink:hover {
+  color: var(--signal);
+}
+
+@media (hover: none) {
+  .hlink {
+    opacity: 0.55;
+  }
+}
+
+/* The continue control is an anchor styled as a bar button. */
+.bar-btn.continue {
+  text-decoration: none;
+  border-color: var(--signal);
+  color: var(--signal);
+}
+
+.bar-btn.continue .ord {
+  font-weight: 700;
+}
+
+.bar-btn.continue[hidden] {
+  display: none;
+}
+
+.intro-meta {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: -2px 0 16px;
+  max-width: 62ch;
+  line-height: 1.7;
+}
+
+.intro-meta kbd {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 0 5px;
+  background: var(--surface);
+}
+
+/* Glossary --------------------------------------------------------------- */
+
+.glossary {
+  margin: 10px 0 0;
+}
+
+.glossary dt {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 14px;
+}
+
+.glossary dd {
+  margin: 2px 0 0;
+  color: #262d35;
+}
+
+.glossary dd a {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 0 5px;
+  margin-left: 2px;
+  white-space: nowrap;
+}
+
+.glossary dd a:hover {
+  border-color: var(--signal);
+}
+
+@media (max-width: 700px) {
+  .outline ol {
+    columns: 1;
+  }
+
+  .rung-nav {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .rung-link {
+    flex: 1 1 0;
+    max-width: none;
+  }
+}
+
+/* Print ------------------------------------------------------------------
+   The guide on paper: no chrome, no overlays, link targets spelled out,
+   headings kept with their text. The disclaimer stays — it ages with the
+   printout, which is exactly when it matters. */
+
+@media print {
+  .rail,
+  .gauge-bar,
+  .rung-foot,
+  .overlay,
+  .toast,
+  .share-banner,
+  .hlink,
+  .outline,
+  [data-widget] {
+    display: none !important;
+  }
+
+  .shell {
+    display: block;
+  }
+
+  .content {
+    max-width: none;
+    padding: 0;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+    line-height: 1.5;
+  }
+
+  .section,
+  .section.done {
+    border: 0;
+    border-top: 1px solid #999;
+    border-radius: 0;
+    padding: 16pt 0 0;
+    margin-top: 16pt;
+  }
+
+  .section h2,
+  .body h3 {
+    break-after: avoid;
+  }
+
+  .body pre,
+  .body table,
+  .agraph,
+  .callout {
+    break-inside: avoid;
+  }
+
+  .body pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .body a[href^="http"]::after,
+  .docs a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 8.5pt;
+    color: #555;
+    word-break: break-all;
+  }
+}

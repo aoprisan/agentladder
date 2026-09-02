@@ -16,6 +16,7 @@ import { logActivity } from "./activity";
 import { graphById, renderFigure } from "./agentgraph";
 import { focusTokenMeter, mountTokenMeter } from "./tokenmeter";
 import { buildShareUrl, readShareHash, clearShareHash } from "./share";
+import { headingId, readingMinutes } from "./anchors";
 
 const sections: Section[] = [...part1, ...sections2];
 
@@ -111,6 +112,30 @@ function shareBanner(): string {
     </div>`;
 }
 
+// Reading time per section, estimated from the body text. Shown in each
+// section header and summed in the intro, so a reader can budget a rung
+// before starting it — the way a course lists hours and a ledger lists
+// remaining work.
+const minutesById = new Map(sections.map((s) => [s.id, readingMinutes(s.body)]));
+
+function fmtMinutes(n: number): string {
+  if (n < 60) return `${n} min`;
+  const h = Math.floor(n / 60);
+  const m = n % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
+// The course has a spine, so every rung links to the ones either side of
+// it. Plain anchors: they work without JS, in print, and with the back
+// button, and the rail's scrollspy picks the new section up on arrival.
+function rungNav(i: number): string {
+  const prev = sections[i - 1];
+  const next = sections[i + 1];
+  const link = (s: Section, dir: "prev" | "next"): string =>
+    `<a class="rung-link ${dir}" href="#${s.id}" title="${dir === "prev" ? "Previous" : "Next"} rung"><span class="ord">${s.ordinal}</span><span class="rung-title">${s.title}</span></a>`;
+  return `<nav class="rung-nav" aria-label="Adjacent rungs">${prev ? link(prev, "prev") : ""}${next ? link(next, "next") : ""}</nav>`;
+}
+
 function render(): void {
   const navItems = sections
     .map(
@@ -127,18 +152,23 @@ function render(): void {
 
   const articles = sections
     .map(
-      (s) => `
+      (s, i) => `
       <article id="${s.id}" class="section" data-id="${s.id}">
         <header class="section-head">
-          <p class="eyebrow"><span class="ord">${s.ordinal}</span>${s.tagline}</p>
+          <p class="eyebrow"><span class="ord">${s.ordinal}</span><span class="tagline">${s.tagline}</span><span class="read-time" title="Estimated reading time at 200 words a minute">${minutesById.get(s.id)} min</span></p>
           <h2>${s.title}</h2>
         </header>
         <div class="body">${s.body}</div>
         ${docsList(s)}
-        <button class="ledger-toggle" data-id="${s.id}" type="button"></button>
+        <footer class="rung-foot">
+          <button class="ledger-toggle" data-id="${s.id}" type="button"></button>
+          ${rungNav(i)}
+        </footer>
       </article>`,
     )
     .join("");
+
+  const totalMinutes = [...minutesById.values()].reduce((a, b) => a + b, 0);
 
   app!.innerHTML = `
     <div class="shell">
@@ -151,20 +181,21 @@ function render(): void {
           </div>
         </div>
         <ul class="nav-list">${navItems}</ul>
-        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · architect · pattern lab · black box · bench · range · checkride · progress travels by link</p>
+        <p class="rail-foot">Updated ${meta.updated} · static site, no backend<br />⌘K search · [ ] previous / next rung · architect · pattern lab · black box · bench · range · checkride · progress travels by link</p>
       </nav>
       <div class="main">
         <header class="gauge-bar" role="status" aria-live="polite">
           <span class="gauge-label">progress</span>
           <div class="gauge"><div class="gauge-fill" id="gauge-fill"></div></div>
           <span class="gauge-count" id="gauge-count"></span>
+          <a class="bar-btn continue" id="btn-continue" href="#" hidden>continue</a>
           <button class="bar-btn" id="btn-architect" type="button" title="The architect — profile a real task, get a ranked design and an exportable decision brief">architect</button>
           <button class="bar-btn" id="btn-drill" type="button" title="Recall drill — spaced repetition over what you've read">drill</button>
           <button class="bar-btn" id="btn-lab" type="button" title="Pattern lab — simulate an agent run and watch the trade-offs">lab</button>
           <button class="bar-btn" id="btn-bb" type="button" title="The black box — read a recorded agent run and find where it went wrong">black box</button>
           <button class="bar-btn" id="btn-bench" type="button" title="The bench — review your own CLAUDE.md, prompt, or tool description">bench</button>
           <button class="bar-btn" id="btn-range" type="button" title="The range — spend a friction budget on controls, then find out which attacks your posture actually holds">range</button>
-          <button class="bar-btn" id="btn-ride" type="button" title="The checkride — 15-question exam, pass mark 80%, shareable wings">checkride</button>
+          <button class="bar-btn" id="btn-ride" type="button" title="The checkride — 20-question exam, pass mark 80%, shareable wings">checkride</button>
           <button class="bar-btn" id="btn-stats" type="button" title="Flight record — streaks, mastery, and review forecast">stats</button>
           <button class="bar-btn" id="btn-search" type="button" title="Search the guide (⌘K)">⌘K</button>
         </header>
@@ -173,8 +204,9 @@ function render(): void {
           ${wingsBanner()}
           <section class="intro">
             <h1>${meta.title}</h1>
-            <p class="lede">${meta.subtitle}. This is a course with a spine, not a reference to skim: twelve levels climb from the first workable mental model (L0) to expert practice — multi-agent systems, adversarial hardening, loop engineering, and the evals that prove it works (L11) — and each rung assumes the ones below it.</p>
+            <p class="lede">${meta.subtitle}. This is a course with a spine, not a reference to skim: thirteen levels climb from the first workable mental model (L0) to expert practice — multi-agent systems, adversarial hardening, loop engineering, the evals that prove it works (L11), and reading the run when it doesn't (L12) — and each rung assumes the ones below it.</p>
             <p class="lede">It also checks that the learning sticks. The drill schedules what you read for spaced recall; the lab, black box, bench and range make you apply it to live runs, real artifacts and real attacks; the checkride certifies the result. New to agents? Start at L0 and climb in order. Already deep in this? Take the checkride first and let the gaps it finds pick your rungs. Mark sections done as you go; progress stays on this device and can travel to a teammate by link.</p>
+            <p class="intro-meta">About ${fmtMinutes(totalMinutes)} of reading across ${sections.length} rungs · each rung shows its own · <a href="#glossary">glossary</a> for any term you don't know · <kbd>[</kbd> <kbd>]</kbd> move between rungs</p>
             <p class="disclaimer">${meta.disclaimer}</p>
           </section>
           ${articles}
@@ -194,8 +226,41 @@ function render(): void {
 
   hydrateGraphs();
   hydrateWidgets();
+  hydrateHeadings();
   syncState();
   observeSections();
+}
+
+// Every h3 gets a stable id (`<section>--<slug>`, from anchors.ts — the same
+// ids the palette computes, so a search hit lands on its heading) and a
+// hover "#" link; sections long enough to need one get an "on this rung"
+// outline under the header. Done after render so the markup stays out of
+// the content files and out of the palette's index.
+const OUTLINE_MIN = 5;
+function hydrateHeadings(): void {
+  app!.querySelectorAll<HTMLElement>("article.section").forEach((article) => {
+    const sectionId = article.dataset.id!;
+    const seen = new Map<string, number>();
+    const items: string[] = [];
+    article.querySelectorAll<HTMLHeadingElement>(".body h3").forEach((h) => {
+      const text = (h.textContent ?? "").trim();
+      const id = headingId(sectionId, text, seen);
+      h.id = id;
+      h.insertAdjacentHTML(
+        "beforeend",
+        ` <a class="hlink" href="#${id}" aria-label="Link to this heading">#</a>`,
+      );
+      items.push(`<li><a href="#${id}">${esc(text)}</a></li>`);
+    });
+    if (items.length >= OUTLINE_MIN) {
+      article
+        .querySelector(".section-head")
+        ?.insertAdjacentHTML(
+          "afterend",
+          `<nav class="outline" aria-label="On this rung"><span class="outline-label">on this rung</span><ol>${items.join("")}</ol></nav>`,
+        );
+    }
+  });
 }
 
 // Section bodies mark where a topology diagram goes with an empty
@@ -240,6 +305,20 @@ function syncState(): void {
   const count = document.getElementById("gauge-count");
   if (fill) fill.style.width = `${(doneCount / sections.length) * 100}%`;
   if (count) count.textContent = `${doneCount}/${sections.length} sections`;
+
+  // "Continue" resumes at the first rung not yet marked done — the ledger
+  // read the way L7 says to read one. Hidden until something is done, and
+  // again once everything is.
+  const cont = document.getElementById("btn-continue") as HTMLAnchorElement | null;
+  if (cont) {
+    const next = doneCount > 0 ? sections.find((s) => !ledger[s.id]) : undefined;
+    cont.hidden = !next;
+    if (next) {
+      cont.href = `#${next.id}`;
+      cont.title = `Pick up at ${next.ordinal} — ${next.title} (${minutesById.get(next.id)} min)`;
+      cont.innerHTML = `continue <span class="ord">${next.ordinal}</span>`;
+    }
+  }
 }
 
 // Highlight the section currently in view in the rail.
@@ -420,7 +499,7 @@ const palette = initPalette(sections, [
   },
   {
     label: "Take the checkride",
-    hint: "15 questions, one pass, 80% to earn shareable wings",
+    hint: "20 questions, one pass, 80% to earn shareable wings",
     run: () => checkride.open(),
   },
   {
@@ -447,6 +526,11 @@ const palette = initPalette(sections, [
     },
   },
   {
+    label: "Open the glossary",
+    hint: "every term the ladder leans on, one line each, with the rung that teaches it",
+    run: () => jumpTo("glossary"),
+  },
+  {
     label: "Open the pattern lab",
     hint: "simulate an agent run — architecture, context, tools, trade-offs",
     run: () => lab.open(),
@@ -463,6 +547,32 @@ const palette = initPalette(sections, [
   },
 ]);
 document.getElementById("btn-search")?.addEventListener("click", () => palette.open());
+
+// ---------------------------------------------------------------------------
+// Keyboard: "[" and "]" move to the previous / next rung, from wherever the
+// scrollspy says you are. Ignored while typing or while any overlay is up,
+// so the drill's and the bench's own key handling is never shadowed.
+// ---------------------------------------------------------------------------
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "[" && e.key !== "]") return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const el = document.activeElement;
+  if (
+    el instanceof HTMLInputElement ||
+    el instanceof HTMLTextAreaElement ||
+    el instanceof HTMLSelectElement ||
+    (el instanceof HTMLElement && el.isContentEditable)
+  ) {
+    return;
+  }
+  if (document.querySelector(".overlay:not([hidden])")) return;
+  const currentId = document.querySelector<HTMLElement>(".nav-link.current")?.dataset.id;
+  const i = sections.findIndex((s) => s.id === currentId);
+  const target = e.key === "]" ? sections[i + 1] : i > 0 ? sections[i - 1] : undefined;
+  if (!target) return;
+  e.preventDefault();
+  jumpTo(target.id);
+});
 
 // ---------------------------------------------------------------------------
 // PWA — register the service worker so the guide installs and works offline.
