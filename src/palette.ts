@@ -3,17 +3,21 @@
 // across every section body plus a few quick actions. The index is built at
 // startup from the same typed Section data the page renders from: bodies are
 // parsed in a detached <template>, split into heading-scoped blocks (one entry
-// per paragraph / list item / table row), and searched with a token-AND
-// scorer that weights title > heading > body text. Zero dependencies.
+// per paragraph / list item / table row / glossary term), and searched with
+// a token-AND scorer that weights title > heading > body text. A hit lands
+// on its heading, not just its section, using the same ids main.ts stamps
+// on the live h3s (anchors.ts). Zero dependencies.
 // ---------------------------------------------------------------------------
 
 import type { Section } from "./content";
+import { headingId } from "./anchors";
 
 interface IndexEntry {
   sectionId: string;
   ordinal: string;
   sectionTitle: string;
-  heading: string; // nearest h3 above the block, "" for lead blocks
+  heading: string; // nearest h3 above the block (or the glossary term), "" for lead blocks
+  anchor: string; // element id of that h3, "" when there is none
   text: string;
 }
 
@@ -36,28 +40,43 @@ function buildIndex(sections: Section[]): IndexEntry[] {
   const tpl = document.createElement("template");
   for (const s of sections) {
     const base = { sectionId: s.id, ordinal: s.ordinal, sectionTitle: s.title };
-    entries.push({ ...base, heading: "", text: s.tagline });
+    entries.push({ ...base, heading: "", anchor: "", text: s.tagline });
     tpl.innerHTML = s.body;
     let heading = "";
+    let anchor = "";
+    const seen = new Map<string, number>();
     for (const el of Array.from(tpl.content.children)) {
       const tag = el.tagName;
       if (tag === "H3" || tag === "H4") {
         heading = clean(el.textContent);
+        // main.ts stamps ids on h3s only; an h4 keeps the h3 above it.
+        if (tag === "H3") anchor = headingId(s.id, heading, seen);
         continue;
       }
       if (tag === "UL" || tag === "OL") {
         for (const li of Array.from(el.children)) {
           const text = clean(li.textContent);
-          if (text) entries.push({ ...base, heading, text });
+          if (text) entries.push({ ...base, heading, anchor, text });
         }
       } else if (tag === "TABLE") {
         for (const row of Array.from(el.querySelectorAll("tr"))) {
           const text = clean(row.textContent);
-          if (text) entries.push({ ...base, heading, text });
+          if (text) entries.push({ ...base, heading, anchor, text });
+        }
+      } else if (tag === "DL") {
+        // A definition list indexes one entry per term, with the term as the
+        // heading — so "trifecta" ranks the glossary line, not the whole list.
+        let term = "";
+        for (const child of Array.from(el.children)) {
+          if (child.tagName === "DT") term = clean(child.textContent);
+          else if (child.tagName === "DD") {
+            const text = clean(child.textContent);
+            if (text) entries.push({ ...base, heading: term, anchor, text });
+          }
         }
       } else {
         const text = clean(el.textContent);
-        if (text) entries.push({ ...base, heading, text });
+        if (text) entries.push({ ...base, heading, anchor, text });
       }
     }
   }
@@ -143,15 +162,18 @@ export function initPalette(
   let rows: Row[] = [];
   let selected = 0;
 
-  function jumpTo(sectionId: string): void {
-    const target = document.getElementById(sectionId);
-    if (!target) return;
+  function jumpTo(sectionId: string, anchor = ""): void {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    // Land on the heading the hit sits under when it has one; the section
+    // still flashes so the eye knows which card it is in.
+    const target = (anchor && document.getElementById(anchor)) || section;
     target.scrollIntoView({ behavior: "smooth", block: "start" });
-    target.classList.remove("flash");
+    section.classList.remove("flash");
     // restart the animation even when jumping to the same section twice
-    void target.offsetWidth;
-    target.classList.add("flash");
-    setTimeout(() => target.classList.remove("flash"), 1800);
+    void section.offsetWidth;
+    section.classList.add("flash");
+    setTimeout(() => section.classList.remove("flash"), 1800);
   }
 
   function computeRows(query: string): Row[] {
@@ -187,7 +209,7 @@ export function initPalette(
         : esc(entry.sectionTitle);
       out.push({
         html: `<span class="ord pal-ord">${entry.ordinal}</span><div class="pal-text"><p class="pal-title">${where}</p><p class="pal-snip">${snippet(entry.text, tokens)}</p></div>`,
-        run: () => jumpTo(entry.sectionId),
+        run: () => jumpTo(entry.sectionId, entry.anchor),
       });
     }
     return out;
@@ -239,6 +261,9 @@ export function initPalette(
 
   function close(): void {
     overlay.hidden = true;
+    // Drop focus from the hidden input, or the "/" shortcut reads the page as
+    // still typing and refuses to reopen until something else is clicked.
+    input.blur();
   }
 
   input.addEventListener("input", refresh);

@@ -2,11 +2,11 @@
 
 A static TypeScript site (Vite, zero runtime dependencies) that takes a team
 from novice to expert in agentic AI, focused on Claude. Content is organized
-as levels L0–L11 — from the first workable mental model up through
-multi-agent systems, adversarial hardening, loop engineering, and the
-evals that prove it works — plus a
-prompt-writing section, a toolbox and a sources section, with official
-documentation links throughout. It is built as a course, not a reference:
+as levels L0–L12 — from the first workable mental model up through
+multi-agent systems, adversarial hardening, loop engineering, the evals
+that prove it works, and reading the run when it doesn't — plus a
+prompt-writing section, a toolbox, a glossary and a sources section, with
+official documentation links throughout. It is built as a course, not a reference:
 reading is scheduled into spaced recall by the drill, applied in hands-on
 exercises (the lab, black box, bench and range), and certified by the
 checkride. Newcomers climb from L0 in order; experienced readers can take
@@ -66,13 +66,21 @@ Beyond reading, the guide is a learning instrument:
   streaks, a 12-week activity heatmap, per-section recall mastery from the
   Leitner boxes, per-incident trajectory-review scores, threat posture per
   deployment, and a 14-day review-due forecast.
-- **The checkride** — a certification exam (the `checkride` button): 15
+- **The checkride** — a certification exam (the `checkride` button): 20
   questions sampled for coverage across every level, one pass, no feedback until the end,
   pass mark 80%. Passing earns "wings" — a shareable, checksummed certificate
   link (`#wings=…`) that shows teammates a verified score banner when opened.
   Unlike the drill, the checkride never touches your review schedule.
+- **Course navigation** — every rung shows its estimated reading time and
+  the intro sums them; previous / next links sit at the foot of each
+  section; a `continue` control in the progress bar resumes at the first
+  rung not yet marked done; every heading is linkable (hover for the `#`)
+  and the long sections carry an "on this rung" outline; `[` and `]` move
+  between rungs; and a print stylesheet drops the chrome and spells out
+  link targets, so the guide reads on paper.
 - **Command palette** — `⌘K` / `Ctrl+K` / `/` opens full-text search across
-  all section content, with quick actions (ask the architect, start drill,
+  all section content (glossary terms included; a hit lands on its
+  heading, not just its section), with quick actions (ask the architect, start drill,
   take the checkride, open the lab, open the flight record, copy progress
   link).
 - **Team share-links** — your ledger encodes into a URL hash (no backend, no
@@ -117,8 +125,9 @@ home screen and works fully offline after the first visit.
 index.html            app shell
 public/               favicon (SVG), manifest, service worker, icons
 src/main.ts           rendering, ledger state, scrollspy rail, feature wiring
+src/anchors.ts        heading ids + reading time (shared by main.ts and palette.ts)
 src/content.ts        sections L0–L3 (typed data)
-src/content2.ts       prompt writing, toolbox, L4–L11, sources
+src/content2.ts       prompt writing, toolbox, L4–L12, glossary, sources
 src/range.ts          the range: controls, threats, routes, scoring (pure logic)
 src/rangeui.ts        the range overlay (harden → call it → run → debrief)
 src/rubric.ts         the bench's review rules (pure logic)

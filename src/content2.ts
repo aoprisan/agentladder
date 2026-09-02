@@ -245,11 +245,68 @@ for await (const msg of query({
 })) {
   if (msg.type === "result") console.log(msg.result);
 }</code></pre>
+<h3>The options are the guide's levers</h3>
+<p>Almost every option on that call is a rung of this ladder made programmable, and reading them that way is the fastest route to a configuration you can defend:</p>
+<table>
+<thead><tr><th>Option</th><th>What it is</th><th>Rung</th></tr></thead>
+<tbody>
+<tr><td><code>allowedTools</code> / <code>disallowedTools</code></td><td>The tool surface. Small and well-scoped, or you have written tool sprawl into code.</td><td>L3</td></tr>
+<tr><td><code>systemPrompt</code></td><td>A string, or the <code>claude_code</code> preset with an <code>append</code> — the standing context, kept byte-identical across calls for the cache's sake.</td><td>L2, PW</td></tr>
+<tr><td><code>permissionMode</code>, <code>canUseTool</code></td><td>The floor (<code>default</code>, <code>acceptEdits</code>, <code>plan</code>, <code>dontAsk</code>, <code>bypassPermissions</code>) and your own callback that sees every tool call's arguments and decides. The action gate, in your code.</td><td>L9</td></tr>
+<tr><td><code>hooks</code></td><td>The same lifecycle events as Claude Code — <code>PreToolUse</code>, <code>PostToolUse</code>, <code>Stop</code>, <code>SubagentStop</code>, <code>PreCompact</code> — as in-process functions.</td><td>L4, L9</td></tr>
+<tr><td><code>maxTurns</code>, <code>maxBudgetUsd</code></td><td>Two of L10's budgets. The result's <code>subtype</code> names the exit the run took: <code>success</code>, <code>error_max_turns</code>, <code>error_max_budget_usd</code>.</td><td>L10</td></tr>
+<tr><td><code>agents</code></td><td>Subagents defined in code — description, prompt, tools, model — instead of in <code>.claude/agents/</code>.</td><td>L4, L5</td></tr>
+<tr><td><code>mcpServers</code></td><td>External servers, and in-process ones you write (below).</td><td>TB</td></tr>
+<tr><td><code>resume</code>, <code>forkSession</code></td><td>Continue a session by id, or branch one. The handoff, natively.</td><td>L7</td></tr>
+<tr><td><code>settingSources</code></td><td>Which filesystem settings (user, project, local) the SDK loads. The default is <em>none</em>.</td><td>L4, L9</td></tr>
+</tbody>
+</table>
+<p class="callout"><strong>The trap: an SDK agent starts with none of your project's configuration.</strong> The skill, the hook and the deny rule that protect the developer laptop were loaded from the filesystem, and <code>settingSources</code> defaults to loading nothing. The posture you tested interactively is not the posture the SDK agent has until you opt those sources in — L9's headless lesson, one layer down.</p>
+
+<h3>Custom tools are in-process MCP servers</h3>
+<p>A tool you write has a name, a description that L3 applies to in full, a schema, and a handler — and it is served to the agent as an MCP server running inside your process, no transport involved. It lands on the surface as <code>mcp__&lt;server&gt;__&lt;tool&gt;</code>, which is the name you allow:</p>
+<pre><code>import { query, tool, createSdkMcpServer } from "@anthropic-ai/claude-agent-sdk";
+import { z } from "zod";
+
+const tickets = createSdkMcpServer({
+  name: "tickets",
+  version: "1.0.0",
+  tools: [
+    tool(
+      "lookup_ticket",
+      "Use this when the user cites a ticket id and you need its status, owner " +
+        "or history. Not for searching by keyword (use search_tickets). " +
+        "Errors if the id does not exist — do not retry, ask the user.",
+      { id: z.string().describe("Ticket id, e.g. SUP-4821") },
+      async ({ id }) => ({
+        content: [{ type: "text", text: JSON.stringify(await db.ticket(id)) }],
+      }),
+    ),
+  ],
+});
+
+for await (const msg of query({
+  prompt: "Is SUP-4821 still blocked, and on whom?",
+  options: {
+    mcpServers: { tickets },
+    allowedTools: ["mcp__tickets__lookup_ticket"],
+    maxTurns: 8,
+  },
+})) {
+  if (msg.type === "result") {
+    console.log(msg.subtype, msg.num_turns, msg.total_cost_usd, msg.session_id);
+  }
+}</code></pre>
+<p>Look at what the result message carries: <code>session_id</code>, <code>total_cost_usd</code>, <code>usage</code>, <code>num_turns</code>, <code>duration_ms</code>. That is the row in your cost table (L12) and the id you resume from (L7), emitted by the loop itself. You do not have to build the bookkeeping this guide keeps asking for — you have to keep it.</p>
+<p>The Python SDK is the same shape with snake-case names — <code>query()</code>, <code>ClaudeAgentOptions</code>, <code>@tool</code>, <code>create_sdk_mcp_server</code> — plus a <code>ClaudeSDKClient</code> for multi-turn sessions. Names on both sides are version-specific; the table above is the shape, the reference is the spelling.</p>
 `,
     docs: [
       { label: "Agent SDK overview (official docs)", url: "https://code.claude.com/docs/en/agent-sdk/overview" },
       { label: "Agent SDK — TypeScript reference", url: "https://code.claude.com/docs/en/agent-sdk/typescript" },
       { label: "Agent SDK — Python reference", url: "https://code.claude.com/docs/en/agent-sdk/python" },
+      { label: "Agent SDK — custom tools (in-process MCP)", url: "https://code.claude.com/docs/en/agent-sdk/custom-tools" },
+      { label: "Agent SDK — permissions", url: "https://code.claude.com/docs/en/agent-sdk/permissions" },
+      { label: "Agent SDK — sessions", url: "https://code.claude.com/docs/en/agent-sdk/sessions" },
       { label: "Building Agents with the Claude Agent SDK (blog)", url: "https://claude.com/blog/building-agents-with-the-claude-agent-sdk" },
       { label: "Claude API overview", url: "https://docs.claude.com/en/api/overview" },
     ],
@@ -629,6 +686,143 @@ for await (const msg of query({
     ],
   },
   {
+    id: "observability",
+    ordinal: "L12",
+    title: "Reading the run — observability and debugging",
+    tagline: "L11 tells you the number moved. This is how you find out why — the transcript as the primary source, and the ten ways a run goes wrong.",
+    body: `
+<p>Every exercise in this guide ends in a debrief, and every debrief starts the same way: with the run laid out turn by turn. That is not a teaching device; it is the job. An eval (L11) tells you <em>that</em> a change cost you three tasks. A stall detector (L10) tells you <em>that</em> a loop stopped converging. A monitoring alert (L9) tells you <em>that</em> an agent opened a connection to a host it had never seen. None of them tells you why. The transcript does — and reading one well is the skill that separates a team that can <em>operate</em> agents from a team that can only deploy them.</p>
+
+<h3>The transcript is the primary source</h3>
+<p>An agent run leaves exactly one complete record: the sequence of turns — what the model saw, what it decided, which tool it called with which arguments, what came back, and what it did next. Everything else you might look at is a projection of that. A cost is a sum over its turns; a score is a judgement of its end state; a metric is a count of something in it. So the first rule is that the record has to be complete, and complete means <strong>every tool call with its arguments and its result</strong>, token usage per turn, and the exact versions of everything L11 tells you to pin — model id, system prompt, tool set. A log that says "called Bash" without the command is the outline of a run, not the run.</p>
+<p>Three views, each answering a different question, in the order you will actually need them:</p>
+<table>
+<thead><tr><th>View</th><th>Answers</th><th>Where it comes from</th></tr></thead>
+<tbody>
+<tr><td><strong>The transcript</strong> — turns, in order</td><td>What happened, and where it went wrong</td><td>The session log. Claude Code keeps one per session under <code>~/.claude/projects/</code>, which is what <code>--resume</code> reads; the Agent SDK yields the same turns as a message stream (L6).</td></tr>
+<tr><td><strong>Metrics</strong> — counts over many runs</td><td>How often, how much, and is it getting worse</td><td>Tokens, cost, turns, tool calls, permission decisions per run. Claude Code exports these over OpenTelemetry when you switch telemetry on; your own harness sums them from its logs.</td></tr>
+<tr><td><strong>The trace</strong> — turns with time and cost attached, nested by agent</td><td>Where the minutes and the money went</td><td>A span per turn and per tool call, so a fan-out (L5) reads as a tree instead of a bill.</td></tr>
+</tbody>
+</table>
+<p>Teams reach for the dashboard first because it looks like observability. The transcript is what you will be reading at two in the morning, and the metric's real job is to tell you which transcript to open.</p>
+<p class="callout"><strong>Privacy is a setting here, and the default is the safe one.</strong> Exported telemetry redacts prompt text and tool arguments unless you opt in per category (<code>OTEL_LOG_USER_PROMPTS</code>, <code>OTEL_LOG_TOOL_DETAILS</code>). Turn them on where the transcript is the point — and remember L9: whatever reaches a log is a disclosure surface, so the log needs the same access control as the credentials that occasionally end up in it.</p>
+
+<h3>Reading a run: four passes</h3>
+<ol>
+<li><strong>Start from the outcome, not the beginning.</strong> Look at the artifact — the diff, the file, the answer — then find the last turn that touched it. Most faults are visible within three turns of the end; most of the rest are within three turns of the start. The middle is where you go once you know what you are looking for.</li>
+<li><strong>Find the turn where the run stopped being right — not the turn where it failed.</strong> Those are usually different turns. A path invented at turn 4 surfaces as a crash at turn 19, and turn 4 is the fault; turn 19 is a symptom. Walk backwards from the failure asking, at each turn, "what did the model believe here, and had it earned that belief?" The first turn where the answer is no is the one to flag.</li>
+<li><strong>Name it.</strong> Classify the fault from the taxonomy below. Naming is a separate skill from locating, and the black box scores them separately for that reason — the right turn with the wrong name is worth something, and the fix depends on the name.</li>
+<li><strong>Fix at the layer that owns it, then keep the run.</strong> A silent assumption is a missing read tool or a missing instruction to read first (L2, L3); an unbounded loop is a missing budget (L10); a missing guardrail is a hook or a sandbox (L9). Then the run goes into the eval set (L11): the incident becomes a task, and the fix is now something the gate can hold.</li>
+</ol>
+
+<h3>The taxonomy — what each fault looks like in a transcript</h3>
+<p>Ten faults cover most of what goes wrong in practice, and each has a signature you can learn to see without reading every word. They are the guide's own claims, inverted — the third column is the rung that teaches the thing the run violated:</p>
+<table>
+<thead><tr><th>Fault</th><th>The signature</th><th>Rung</th></tr></thead>
+<tbody>
+<tr><td><strong>Wrong pattern</strong></td><td>An orchestrator spun up for a lookup; a full agent loop where one call would do; or a fixed chain repeatedly derailed by questions its plan didn't anticipate.</td><td>L1</td></tr>
+<tr><td><strong>Context rot</strong></td><td>Quality falling as the turn number rises; a late turn contradicting an early one it can no longer "see"; the model re-reading what it already has.</td><td>L2</td></tr>
+<tr><td><strong>No verification</strong></td><td>"Done" with no check run — or a check run, failed, and not acted on. A test suite mentioned and never invoked.</td><td>L10</td></tr>
+<tr><td><strong>Silent assumption</strong></td><td>A value appearing in an argument with no earlier turn that read it: a path, a schema, an API shape, invented and then acted on.</td><td>L0</td></tr>
+<tr><td><strong>Tool sprawl</strong></td><td>Near-identical tools on the surface; the model picking the wrong one, or burning turns choosing.</td><td>L3</td></tr>
+<tr><td><strong>Premature fan-out</strong></td><td>Parallel workers touching the same file or state; duplicated results; a merge step reconciling what the split created.</td><td>L5</td></tr>
+<tr><td><strong>Lost handoff</strong></td><td>A subagent returning prose where an artifact was needed; a compaction or restart after which the run re-derives what it knew, or forgets a decision it made.</td><td>L5</td></tr>
+<tr><td><strong>Unbounded loop</strong></td><td>The same call with the same arguments, twice or more; a verifier flat across rounds; turns accumulating with no new information.</td><td>L10</td></tr>
+<tr><td><strong>Missing guardrail</strong></td><td>An irreversible or outward-facing action — push, send, delete, pay — with no confirmation, dry run or sandbox between the decision and the world.</td><td>L9</td></tr>
+<tr><td><strong>Goal drift</strong></td><td>The metric goes green and the task isn't done: the test edited instead of the code, the flaky case skipped, the output shaped to satisfy the check rather than the user.</td><td>L0</td></tr>
+</tbody>
+</table>
+<p>Two of these hide inside success, which is why they are the ones to look for on the runs that <em>passed</em>. <strong>Goal drift</strong> produces a green run — a test made to pass rather than a bug fixed — and the lesson is structural: a verifier the agent can edit is not a verifier, which is the case for checks that live in hooks the model cannot touch (L9). <strong>Silent assumption</strong> produces a confident run: nothing errors, because a guess that happens to be right leaves no trace until the input changes.</p>
+
+<h3>Cost attribution — where the money went</h3>
+<p>L5's fifteen-times figure is an average. In a real system it is a distribution with a long tail, and the tail is where the tuning happens. Attribute cost <strong>per agent and per tool</strong>, not per run: usage per turn, summed by the agent that spent it and the tool that returned it. That is what reveals the discovery subagent burning more than the synthesis it feeds, the one tool returning 40&nbsp;KB where 2&nbsp;KB would do (L3), the retry that quietly doubled a bill. In a fan-out, reading cost as a tree — each worker's spend under its parent — turns the bill into a diagnosis; reading it as a total turns it into a mystery. And keep it next to the quality number on every scoreboard (L11): a fix that costs three times what it saves is not a fix.</p>
+
+<h3>Small changes cascade — the rollout discipline</h3>
+<p>L5 made the warning; this is the practice. A one-line prompt edit can change tool selection across a whole system, so a change to a prompt, a tool description, a memory file or a model id is treated as a deploy, not a typo fix:</p>
+<ul>
+<li><strong>Diff the behaviour, not just the text.</strong> Run the eval set before and after (L11), then read transcript <em>pairs</em> on the tasks whose score moved. The score says something changed; the pair says what.</li>
+<li><strong>Canary.</strong> A fraction of the traffic, or a subset of the batch, on the new version — with both sets of runs kept side by side.</li>
+<li><strong>Resume from the error, not from zero.</strong> A long run that failed at turn 40 restarts at turn 40 with the ledger it wrote (L7). Restarting at turn 1 costs the forty turns and, worse, produces a <em>different</em> run that may not reproduce the fault.</li>
+<li><strong>Keep every failed transcript.</strong> Retention is what makes "every incident becomes a task" (L11) possible, and it is what the L9 incident procedure scopes from.</li>
+</ul>
+
+<h3>Agents reading agents</h3>
+<p>The volume problem is real: a team running a hundred sessions a day cannot read a hundred transcripts. The same move this guide recommends for tools (L3) and evals (L11) closes the gap — have a model read them. A classifier in a fresh context that walks each run and tags it with faults from the taxonomy above turns a pile of logs into a histogram: which faults, on which tools, on which tasks. It is the L10 verifier hierarchy applied to reading — a model that did not produce the run is a legitimate judge of it, and a cheap one. Keep the human pass for the failure modes the classifier hasn't been taught yet; that is where the eleventh fault will come from.</p>
+
+<p class="callout"><strong>Where to practise this:</strong> the black box (in the bar above) is this section as an exercise — four recorded runs, the transcript and the outcome, nothing highlighted. Its scoring is built for the four-pass method: partial credit for the right turn with the wrong name, and a penalty for flagging clean turns, because an operator who flags everything has read nothing.</p>
+`,
+    docs: [
+      { label: "Monitoring usage — OpenTelemetry metrics and events", url: "https://code.claude.com/docs/en/monitoring-usage" },
+      { label: "How We Built Our Multi-Agent Research System — observability lessons", url: "https://www.anthropic.com/engineering/multi-agent-research-system" },
+      { label: "Writing Effective Tools for AI Agents — transcript analysis", url: "https://www.anthropic.com/engineering/writing-tools-for-agents" },
+      { label: "Agent SDK — sessions and the message stream", url: "https://code.claude.com/docs/en/agent-sdk/sessions" },
+      { label: "CLI reference — resume, continue, output formats", url: "https://code.claude.com/docs/en/cli-reference" },
+    ],
+  },
+  {
+    id: "glossary",
+    ordinal: "GL",
+    title: "Glossary — the vocabulary, one line each",
+    tagline: "Every term the ladder leans on, with the rung that teaches it. Searchable from ⌘K, so a word you don't know is never more than a keystroke away.",
+    body: `
+<p>The levels introduce these terms where they are needed; this is the same vocabulary in one place, alphabetical, with a pointer to the rung that owns each one. A definition here is a reminder, not a lesson — if one is new to you, the rung is the reading.</p>
+<dl class="glossary">
+<dt>Agent</dt><dd>A system in which the model directs its own process and tool use, deciding how to reach the goal. Contrast <em>workflow</em>. <a href="#mental-model">L0</a></dd>
+<dt>Agent SDK</dt><dd>The Claude Code harness as a library, in Python and TypeScript: the loop, tools, permissions, compaction and subagents behind one <code>query()</code> call. <a href="#agent-sdk">L6</a></dd>
+<dt>Agent team</dt><dd>Claude Code's experimental multi-session mode: a lead plus teammates, each in its own context window and worktree, who message each other directly instead of only reporting upward. <a href="#multi-agent">L5</a></dd>
+<dt>Augmented LLM</dt><dd>A model plus retrieval, tools and memory — the atomic unit every pattern is built from. <a href="#mental-model">L0</a></dd>
+<dt>Budget</dt><dd>An explicit limit on steps, tool calls, tokens, wall-clock or money, with a defined behaviour when it runs out. The alternative is a limit discovered by an invoice. <a href="#loop-engineering">L10</a></dd>
+<dt>Calibration</dt><dd>How well your prediction of your own posture matches the reveal. The range scores it separately from the posture, because the gap predicts what you will switch off first. <a href="#adversarial">L8</a></dd>
+<dt>Checkride</dt><dd>This guide's certification exam: questions sampled across every rung, one pass, no feedback until the end, a pass mark, and a shareable certificate.</dd>
+<dt>CLAUDE.md</dt><dd>The always-loaded memory file — build commands, conventions, definition of done. Read on every turn, which is why it stays short. <a href="#claude-code">L4</a></dd>
+<dt>Compaction</dt><dd>Summarising a long trajectory (decisions, current state, open items) and continuing from the summary when the window fills. Define what must survive it. <a href="#context">L2</a></dd>
+<dt>Confused deputy</dt><dd>An agent holding your authority that an attacker steers by supplying its <em>reasons</em>. The fix is a smaller badge, not a smarter deputy. <a href="#adversarial">L8</a>, <a href="#hardening">L9</a></dd>
+<dt>Context engineering</dt><dd>Choosing the smallest set of high-signal tokens most likely to produce the behaviour you want; the successor to prompt engineering. <a href="#context">L2</a></dd>
+<dt>Context rot</dt><dd>The decline in accuracy as the window fills. Attention is a finite budget and every token competes for it. <a href="#context">L2</a></dd>
+<dt>Context window</dt><dd>Everything the model can see on one turn: system prompt, tool descriptions, memory files, the conversation so far, tool results. One flat sequence of tokens with no channel for authority. <a href="#context">L2</a>, <a href="#adversarial">L8</a></dd>
+<dt>Effort</dt><dd>A per-request control on how hard the model works. Turning it down on a strong model often beats switching to a weaker one, and keeps one cache namespace. <a href="#toolbox">TB</a></dd>
+<dt>Egress allowlist</dt><dd>The named set of hosts a sandboxed process may reach. The cheapest cut through the lethal trifecta — and only as narrow as its widest entry. <a href="#hardening">L9</a></dd>
+<dt>Eval set</dt><dd>Twenty-odd realistic tasks drawn from real work, graded on end states, run before every change ships. <a href="#evals">L11</a></dd>
+<dt>Evaluator–optimizer</dt><dd>One model generates, another evaluates against explicit criteria and demands revision, in a loop. <a href="#patterns">L1</a></dd>
+<dt>Friction points</dt><dd>The range's currency: what a control costs the people who have to live with it, priced per deployment. A control people have switched off is not a control. <a href="#adversarial">L8</a></dd>
+<dt>Goal drift</dt><dd>Optimising the measurable proxy instead of the goal: the metric goes green, the task does not get done. <a href="#mental-model">L0</a>, <a href="#observability">L12</a></dd>
+<dt>Handoff</dt><dd>State written for the next session's cold start — progress file, decision log, ledger — so a budget running out is a pause, not a death. <a href="#production">L7</a>, <a href="#loop-engineering">L10</a></dd>
+<dt>Harness</dt><dd>The code around the model that runs the loop: tool execution, permissions, compaction, hooks. Claude Code is one; the Agent SDK is the same one as a library. <a href="#claude-code">L4</a>, <a href="#agent-sdk">L6</a></dd>
+<dt>Headless mode</dt><dd><code>claude -p</code>: Claude Code with nobody present, for CI and scheduled jobs. Every control that needs a person evaluates to nothing here. <a href="#claude-code">L4</a>, <a href="#hardening">L9</a></dd>
+<dt>Held-out set</dt><dd>Eval tasks you never tune against, so the score stays a measurement instead of a memory. <a href="#evals">L11</a></dd>
+<dt>Hook</dt><dd>A command the harness runs at a lifecycle event (<code>PreToolUse</code>, <code>PostToolUse</code>, <code>Stop</code>…). Deterministic — so it is where "must happen every time" lives. <a href="#claude-code">L4</a>, <a href="#hardening">L9</a></dd>
+<dt>Just-in-time retrieval</dt><dd>Loading content when it is needed, through tools, instead of pre-loading it. Paths are cheap; contents are expensive. <a href="#context">L2</a></dd>
+<dt>Ledger</dt><dd>A persistent list of testable goals with status, kept outside the context so work survives a session boundary. This guide's progress tracker is one. <a href="#production">L7</a></dd>
+<dt>Leitner box</dt><dd>The drill's schedule: cards climb through boxes with growing intervals; a miss drops the card back to the first box.</dd>
+<dt>Lethal trifecta</dt><dd>Private data, untrusted content and a way to communicate outward, together in one context: an exfiltration channel. Any two are survivable. <a href="#adversarial">L8</a></dd>
+<dt>LLM-as-judge</dt><dd>A model grading outputs against a rubric in a fresh context. Ask for per-criterion verdicts, and calibrate it against human grades before trusting it. <a href="#production">L7</a>, <a href="#evals">L11</a></dd>
+<dt>MCP</dt><dd>Model Context Protocol — the open standard for exposing tools, resources and prompts to any agent client. Every connected server's descriptions cost context on every turn. <a href="#toolbox">TB</a></dd>
+<dt>Memory file</dt><dd>Any persistent instruction file: <code>CLAUDE.md</code>, rules, skills, hooks, MCP config. Executable, from the agent's point of view — review it as source. <a href="#claude-code">L4</a>, <a href="#adversarial">L8</a></dd>
+<dt>Orchestrator–workers</dt><dd>A lead model decomposes the task dynamically, delegates to workers in their own windows, and synthesises. The backbone of multi-agent systems. <a href="#patterns">L1</a>, <a href="#multi-agent">L5</a></dd>
+<dt>Plan mode</dt><dd>Claude Code's read-only phase: explore and propose before anything is edited. <a href="#claude-code">L4</a></dd>
+<dt>Plugin</dt><dd>A package that distributes skills, agents, hooks and MCP configuration together. <a href="#claude-code">L4</a></dd>
+<dt>Prompt caching</dt><dd>Byte-exact prefix reuse across requests. Reads bill at a fraction of fresh input, so stable context goes first and stays unchanged. <a href="#prompt-formats">PW</a>, <a href="#toolbox">TB</a></dd>
+<dt>Prompt injection</dt><dd>Instructions arriving through content the agent reads — a page, a ticket, a tool result — and being followed as if they were yours. Structural, not a bug to patch. <a href="#adversarial">L8</a></dd>
+<dt>Provenance</dt><dd>Marking untrusted material as material: wrapped and framed as data to reason about, never spliced in as instruction. <a href="#adversarial">L8</a></dd>
+<dt>Regression gate</dt><dd>The eval set run in CI on changes to prompts, tool descriptions, memory files and model id. Red blocks the merge. <a href="#evals">L11</a></dd>
+<dt>Routing</dt><dd>Classify the input, then dispatch to a specialised prompt, model or path. The natural place for cost control. <a href="#patterns">L1</a></dd>
+<dt>Sandbox</dt><dd>An OS boundary — filesystem and network — on the running process and everything it spawns. The only layer the model cannot talk its way past. <a href="#hardening">L9</a></dd>
+<dt>Silent assumption</dt><dd>A fact invented instead of read or asked for, then acted on as if it were evidence. Leaves no trace while it happens to be right. <a href="#mental-model">L0</a>, <a href="#observability">L12</a></dd>
+<dt>Skill</dt><dd>A folder with a <code>SKILL.md</code>, loaded only when the task matches its description — progressive disclosure. <a href="#claude-code">L4</a></dd>
+<dt>Stall</dt><dd>A run still burning budget without converging. Detected by repetition and flat verifiers, not by turn count; needs its own exit. <a href="#loop-engineering">L10</a></dd>
+<dt>Structured note-taking</dt><dd>The agent writing durable state — task lists, progress logs, decisions — to files outside the window and re-reading it. <a href="#context">L2</a></dd>
+<dt>Subagent</dt><dd>A delegate in its own context window that returns a condensed result. Fork for breadth, stay inline for depth. <a href="#context">L2</a>, <a href="#claude-code">L4</a></dd>
+<dt>Tool description</dt><dd>A tool's name, description and parameter docs. A prompt — and a routing decision the model makes at call time. <a href="#tool-design">L3</a></dd>
+<dt>Trajectory</dt><dd>The sequence of turns a run took. The transcript is its record; trajectory review is the skill of reading one. <a href="#observability">L12</a></dd>
+<dt>Verifier</dt><dd>The check that decides whether the loop goes round again. Strongest when it is code, outside the context that produced the work. <a href="#loop-engineering">L10</a></dd>
+<dt>Wings</dt><dd>The checkride's shareable certificate link, checksummed for tamper-evidence — a team ritual, not cryptography.</dd>
+<dt>Workflow</dt><dd>LLM calls and tools orchestrated through predefined code paths: you decide the steps, the model fills them in. <a href="#mental-model">L0</a></dd>
+<dt>Worktree</dt><dd>A separate Git checkout of the same repository — the cheapest way to run parallel sessions on independent tasks. <a href="#multi-agent">L5</a></dd>
+</dl>
+`,
+    docs: [],
+  },
+  {
     id: "sources",
     ordinal: "REF",
     title: "Primary sources",
@@ -653,6 +847,7 @@ for await (const msg of query({
 <li><a href="https://modelcontextprotocol.io" target="_blank" rel="noopener">Model Context Protocol</a> · <a href="https://github.com/modelcontextprotocol/servers" target="_blank" rel="noopener">reference servers</a></li>
 <li><a href="https://code.claude.com/docs/en/security" target="_blank" rel="noopener">Security</a> · <a href="https://code.claude.com/docs/en/permissions" target="_blank" rel="noopener">permissions</a> · <a href="https://code.claude.com/docs/en/sandboxing" target="_blank" rel="noopener">sandboxing</a> — the reading behind L8–L9</li>
 <li><a href="https://docs.claude.com/en/docs/test-and-evaluate/define-success" target="_blank" rel="noopener">Define success criteria</a> · <a href="https://docs.claude.com/en/docs/test-and-evaluate/develop-tests" target="_blank" rel="noopener">empirical evals</a> — the reading behind L11</li>
+<li><a href="https://code.claude.com/docs/en/monitoring-usage" target="_blank" rel="noopener">Monitoring usage (OpenTelemetry)</a> · <a href="https://code.claude.com/docs/en/agent-sdk/sessions" target="_blank" rel="noopener">SDK sessions</a> — the reading behind L12</li>
 <li><a href="https://github.com/anthropics/skills" target="_blank" rel="noopener">anthropics/skills</a> · <a href="https://github.com/anthropics/anthropic-cookbook" target="_blank" rel="noopener">anthropic-cookbook</a> · <a href="https://github.com/anthropics/claude-code" target="_blank" rel="noopener">anthropics/claude-code</a></li>
 </ul>
 
@@ -662,6 +857,17 @@ for await (const msg of query({
 <li><a href="https://smartscope.blog/en/generative-ai/claude/claude-code-best-practices-advanced-2026/" target="_blank" rel="noopener">Advanced hooks / subagents / context techniques</a></li>
 <li><a href="https://claudefa.st/blog/guide/agents/agent-teams" target="_blank" rel="noopener">Agent teams setup guide</a></li>
 <li><a href="https://www.scriptbyai.com/claude-code-resource-list/" target="_blank" rel="noopener">Curated Claude Code ecosystem directory</a></li>
+</ul>
+
+<h3>What changed, and when</h3>
+<p>The ladder grows a rung at a time. If you climbed it before, this is what is new since you did — the guide's own changelog, for returning readers:</p>
+<ul>
+<li><strong>September 2026</strong> — L12 (reading the run: observability and debugging) and this glossary; L3 gains the before/after tool description and schema rules, L6 the SDK's option table and in-process tools. Delivery: reading time per rung, previous/next navigation, a continue button, linkable headings with on-this-rung outlines, <code>[</code>/<code>]</code> keyboard navigation, and a print layout.</li>
+<li><strong>31 August 2026</strong> — L11 (evals); cost economics in TB; API memory and context-editing features in L2; topology diagrams for L2 and L4; version-specific claims re-verified.</li>
+<li><strong>17 August 2026</strong> — L10 (loop engineering).</li>
+<li><strong>27 July 2026</strong> — L8 (the adversary), L9 (hardening in practice) and the range; PW (writing the prompt) with the live token meter.</li>
+<li><strong>26 July 2026</strong> — the black box (trajectory review) and the bench (artifact review).</li>
+<li><strong>24–25 July 2026</strong> — first release: L0–L7 and the sources, the drill, ⌘K search, team share-links, the pattern lab, the flight record, the architect, the checkride, topology diagrams throughout, offline install.</li>
 </ul>
 `,
     docs: [],

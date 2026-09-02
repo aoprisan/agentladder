@@ -17,7 +17,9 @@
 //
 // The faults are the guide's own claims, inverted: every FaultId points at the
 // section that teaches the thing the run violated. When a section's claims
-// change, re-check the fault blurbs and the per-turn commentary here.
+// change, re-check the fault blurbs and the per-turn commentary here. L12
+// (observability, content2.ts) presents these same ten faults as a table of
+// transcript signatures — keep that table and this list in step.
 // ---------------------------------------------------------------------------
 
 export type FaultId =

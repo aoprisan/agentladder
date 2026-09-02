@@ -5,7 +5,7 @@ export interface DocLink {
 
 export interface Section {
   id: string;
-  ordinal: string; // "L0" … "L11", "PW", "TB", "REF"
+  ordinal: string; // "L0" … "L12", "PW", "TB", "GL", "REF"
   title: string;
   tagline: string;
   body: string; // trusted HTML authored in this repo
@@ -15,7 +15,7 @@ export interface Section {
 export const meta = {
   title: "Agentic Workflows with Claude",
   subtitle: "From novice to expert, rung by rung — a learning ladder for teams",
-  updated: "August 2026",
+  updated: "September 2026",
   disclaimer:
     "This space moves monthly. Version-specific details (agent teams, nested subagents, CLI flags) should be re-verified against the official docs before you rely on them.",
 };
@@ -131,6 +131,29 @@ export const sections: Section[] = [
 <li><strong>Iterate with evals.</strong> Build realistic tasks, run the agent, read transcripts, fix the tools where the agent stumbles. Notably: use Claude itself to analyze failed transcripts and propose tool improvements — agents optimizing tools for agents works well.</li>
 <li><strong>Return meaningful errors.</strong> Error messages are how agents self-correct. "Permission denied: file is read-only, copy to /tmp first" beats "Error 13".</li>
 </ul>
+<h3>A description is a routing decision</h3>
+<p>The model does not read a tool description to learn what the tool does. It reads it while choosing, at call time, between this tool and everything else on the surface — so a description is a routing decision, and the parts that matter are the ones that decide the route: <em>when</em> to reach for it, when <em>not</em> to, and what a failure means. Before and after:</p>
+<pre><code>// before
+search_docs — Searches the documentation.
+
+// after
+search_docs — Use this when the user asks how a product feature behaves
+and you do not already have the page. Full-text search over the public
+docs; returns up to 10 hits as {title, url, snippet}. Not for source
+code (use grep_repo), and not for a page whose URL you already have
+(use fetch_page). An empty result means no page matches: rephrase once,
+then say so — it does not mean the docs are down.</code></pre>
+<p>Four things changed: a trigger condition, a boundary against the neighbouring tools, the shape of what comes back, and the meaning of nothing coming back. Each is one sentence, and each is a decision the model would otherwise make by guessing.</p>
+
+<h3>The schema is part of the prompt</h3>
+<ul>
+<li><strong>Parameter names carry meaning.</strong> <code>user_id</code> beats <code>id</code>; <code>iso_date</code> beats <code>date</code>; an enum beats a free string wherever the values are known, because a schema constrains where a description only asks.</li>
+<li><strong>Namespace by system.</strong> <code>github_create_issue</code>, <code>jira_create_issue</code> — the prefix tells the model which world it is acting in and stops two "create issue" tools blurring into one.</li>
+<li><strong>Return what the next decision needs, not what the API returned.</strong> Names resolved from ids, times a human can read, and a <code>response_format</code> parameter — concise by default, detailed on request — so the model asks for the expensive shape only when it needs it.</li>
+<li><strong>Budget the response.</strong> Default page sizes, filters, and truncation with a pointer to the rest. A 50&nbsp;KB result is a context-rot event (L2) that happened inside a tool.</li>
+</ul>
+<p>The bench (in the bar above) runs exactly these rules over a tool description you paste in — trigger, boundary, failure semantics, surface size — and cites the sentence that justifies each finding.</p>
+
 <p class="callout"><strong>"Bash is all you need":</strong> a striking lesson from the Claude Code team — a general-purpose shell plus file tools outperforms large collections of bespoke narrow tools in many domains, because models know bash deeply and can compose it freely. Add specialized tools only where bash genuinely can't do the job, or where you need control and safety.</p>
 `,
     docs: [

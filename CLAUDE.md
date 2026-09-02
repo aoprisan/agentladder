@@ -5,8 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 A static, zero-runtime-dependency TypeScript site (Vite) that teaches teams
-agentic workflows with Claude, organized as levels L0–L11 plus a prompt-writing
-section (PW), a toolbox (TB) and a sources/reference (REF) section. There is no backend; reading progress
+agentic workflows with Claude, organized as levels L0–L12 plus a prompt-writing
+section (PW), a toolbox (TB), a glossary (GL) and a sources/reference (REF) section. There is no backend; reading progress
 ("the ledger") and recall-drill scheduling are persisted per-device in
 `localStorage`, and progress can travel between people via share-links
 encoded in the URL hash.
@@ -34,13 +34,26 @@ Everything renders from typed data. The moving parts:
 
 - **`src/content.ts`** — defines the `Section` and `DocLink` interfaces, the
   `meta` object (title/subtitle/updated/disclaimer), and `sections` L0–L3.
-- **`src/content2.ts`** — `sections2`: prompt writing (PW), the toolbox, L4–L11,
-  and sources. Imports the `Section` type from `content.ts`.
+- **`src/content2.ts`** — `sections2`: prompt writing (PW), the toolbox, L4–L12,
+  the glossary (GL), and sources. Imports the `Section` type from `content.ts`.
+  The glossary is a `<dl class="glossary">`; the palette indexes one entry
+  per term. REF ends with a dated changelog — add a line when a rung lands.
 - **`src/main.ts`** — concatenates `[...part1, ...sections2]` into one array,
   then renders the whole page by string-templating `innerHTML`. It owns ledger
   state, the progress gauge, an `IntersectionObserver` scrollspy that
   highlights the current section in the nav rail, and wires up the drill,
-  palette, and share modules below.
+  palette, and share modules below. After render it also stamps an id on
+  every body `h3` and inserts the "on this rung" outline for sections with
+  five or more headings (`hydrateHeadings`, ids from `anchors.ts`), renders
+  reading time per section (and the intro's total), the previous/next rung
+  footer under each section, the `continue` control in the gauge bar (first
+  rung not marked done), and the `[` / `]` keyboard navigation (suppressed
+  while typing or while any `.overlay` is open).
+- **`src/anchors.ts`** — `headingId(sectionId, text, seen)` → the element id
+  a heading gets (`<section>--<slug>`), and `readingMinutes(html)`. Shared
+  by `main.ts` (stamps the live h3s) and `palette.ts` (indexes the same body
+  strings) so a search hit lands on the heading it was found under; if they
+  computed ids separately, they would drift.
 - **`src/quiz.ts`** — the recall-drill question bank: `QuizQuestion` objects
   (multiple choice + explanation) keyed to a `sectionId`. Questions are
   authored against the section bodies — **when a section's claims change,
@@ -52,8 +65,10 @@ Everything renders from typed data. The moving parts:
   modal overlay. Keyboard: 1–4 answer, Enter next, Esc close.
 - **`src/palette.ts`** — the ⌘K / Ctrl+K / `/` command palette. At startup it
   parses every section body in a detached `<template>` into heading-scoped
-  blocks (paragraph / list-item / table-row granularity) and runs a token-AND
-  scorer over them (title > heading > body weight). Also hosts quick actions
+  blocks (paragraph / list-item / table-row / glossary-term granularity) and
+  runs a token-AND scorer over them (title > heading > body weight); each
+  entry carries the id of the h3 it sits under (from `anchors.ts`) so a hit
+  scrolls to the heading, not just the section. Also hosts quick actions
   (start drill, open lab, open flight record, copy share link) passed in from
   `main.ts`.
 - **`src/labsim.ts`** — the pattern-lab simulation engine, pure logic with no
@@ -98,7 +113,7 @@ Everything renders from typed data. The moving parts:
   question per screen) → verdict → brief (copy/download). Last answers
   persist under `agentic-guide-architect-v1`; a `#arch=` hash opens straight
   onto the recomputed verdict.
-- **`src/checkride.ts`** — the certification exam: 15 questions sampled for
+- **`src/checkride.ts`** — the certification exam: 20 questions sampled for
   section coverage from `quiz.ts`, one pass, no feedback until the end, pass
   mark 80%. Deliberately does NOT touch SRS scheduling (it logs activity
   only). Passing builds a shareable wings link
@@ -199,7 +214,7 @@ Everything renders from typed data. The moving parts:
   Exports a Markdown threat model; nothing the reader chooses leaves the
   device.
 - **`src/share.ts`** — team share-links: the ledger's done-bits packed into a
-  hex payload in the URL hash (`#share=5.<hex>`, bit order = sections-array
+  hex payload in the URL hash (`#share=7.<hex>`, bit order = sections-array
   order, so **don't reorder or insert sections** without bumping the payload
   version). V1 links are still decoded against the frozen `V1_ORDER` list —
   when you bump the version, freeze the old order the same way rather than
@@ -214,14 +229,17 @@ that way; do not feed user or fetched input through it. `docs` renders as an
 **To add or edit a section**, add/modify a `Section` object in `content.ts`
 (L0–L3) or `content2.ts` (everything else). The nav rail, progress gauge, and
 scrollspy all derive from the sections array automatically — no wiring needed.
-`ordinal` is the label shown ("L0"…"L11", "PW", "TB", "REF"); `id` is the
-anchor and the ledger key. To drop a topology diagram into a body, add an
+`ordinal` is the label shown ("L0"…"L12", "PW", "TB", "GL", "REF"); `id` is
+the anchor and the ledger key. Appending a section is free; inserting one
+anywhere else (the usual case — new rungs land before REF) means bumping the
+share payload version in `share.ts` and freezing the previous order there. To drop a topology diagram into a body, add an
 empty `<div data-graph="<graph id>"></div>` — `main.ts` fills it from
 `agentgraph.ts`; add the graph there first if it doesn't exist yet. Interactive
 widgets work the same way: `<div data-widget="token-meter"></div>` is mounted
 by `hydrateWidgets()` in `main.ts`. Both hooks keep the markup out of the
 content files and out of the palette's search index (which reads the body
-strings, so an empty div contributes nothing).
+strings, so an empty div contributes nothing). Headings need no markup:
+every `<h3>` in a body gets a stable id and a hover link at render time.
 
 The ledger persists to `localStorage` under `agentic-guide-ledger-v1`
 (`STORE_KEY` in `main.ts`); drill scheduling under `agentic-guide-srs-v1`
@@ -236,7 +254,7 @@ content-free scoreboard under `agentic-guide-bench-v1` (`BENCH_KEY` in
 `agentic-guide-range-v1` (`RANGE_KEY` in `range.ts`). Changing any key resets everyone's saved state for that feature
 — they are deliberately independent stores.
 
-Three URL-hash payloads coexist and are mutually exclusive: `#share=5.…`
+Three URL-hash payloads coexist and are mutually exclusive: `#share=7.…`
 (ledger bits, `share.ts`), `#arch=1.…` (architect answers, `architect.ts`),
 `#wings=1.…` (checkride certificate, `checkride.ts`). All are read once at
 module init in `main.ts`; section bodies are trusted HTML but hash-sourced
@@ -288,6 +306,11 @@ This subject moves monthly. Version-specific claims (agent teams, nested
 subagents, CLI flags) should be re-verified against
 https://code.claude.com/docs before relying on them — this caveat is surfaced
 to readers via `meta.disclaimer` and should stay accurate.
+
+When a rung lands or a section's claims change, add a line to the changelog
+at the end of REF (`sources` in `content2.ts`) and, if a new term came with
+it, a `<dt>`/`<dd>` pair to the glossary. L12's fault table mirrors the
+black box's `FAULTS` taxonomy — change one, change the other.
 
 When editing a section's claims, also update its questions in `src/quiz.ts`
 (they quiz the exact numbers and phrasings the sections teach), the matching
